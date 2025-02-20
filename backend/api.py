@@ -110,9 +110,9 @@ def get_emotions():
             current_app.logger.debug("未找到 bot_config，返回空字典")
             return jsonify({})
             
-        # 直接从 self.config 获取
-        tag_descriptions = bot_config.config.get("tag_descriptions", {})
-        current_app.logger.debug(f"从 bot_config.config 获取的 tag_descriptions: {tag_descriptions}")
+        # 直接从 bot_config 获取
+        tag_descriptions = bot_config.get("tag_descriptions", {})
+        current_app.logger.debug(f"从 bot_config 获取的 tag_descriptions: {tag_descriptions}")
             
         return jsonify(tag_descriptions)
     except Exception as e:
