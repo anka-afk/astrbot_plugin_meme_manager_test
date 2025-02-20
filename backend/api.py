@@ -133,8 +133,6 @@ def delete_category():
         if not category:
             return jsonify({"message": "Category is required"}), 400
 
-        print("Debug - 当前 Flask 配置:", current_app.config)  # 调试输出
-        print("Debug - PLUGIN_CONFIG:", current_app.config.get("PLUGIN_CONFIG"))  # 调试输出
         
         # 删除文件夹
         category_path = os.path.join(current_app.config["MEMES_DIR"], category)
@@ -149,9 +147,7 @@ def delete_category():
         try:
             # 获取配置对象
             plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-            print("Debug - plugin_config:", plugin_config)  # 调试输出
             bot_config = plugin_config.get("bot_config")
-            print("Debug - bot_config:", bot_config)  # 调试输出
             
             if not bot_config:
                 raise ValueError("未找到配置对象")
@@ -245,9 +241,7 @@ def get_sync_status():
     """获取同步状态"""
     try:
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        print("Debug - PLUGIN_CONFIG:", plugin_config)  # 调试输出
         img_sync = plugin_config.get("img_sync")
-        print("Debug - img_sync:", img_sync)  # 调试输出
         if not img_sync:
             return jsonify({
                 "error": "配置错误",
@@ -323,5 +317,63 @@ def check_sync_process():
         return jsonify({"completed": False})
     except Exception as e:
         return jsonify({"message": str(e)}), 500
+
+def sync_emotion_map():
+    """同步表情包文件夹结构和配置"""
+    try:
+        # 获取配置对象
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        bot_config = plugin_config.get("bot_config")
+        if not bot_config:
+            raise ValueError("未找到配置对象")
+
+        # 获取当前的 emotion_map
+        emotion_map = bot_config.get("emotion_map", {}).copy()
+        
+        # 获取表情包文件夹下的所有目录
+        memes_dir = current_app.config["MEMES_DIR"]
+        existing_categories = set(
+            d for d in os.listdir(memes_dir) 
+            if os.path.isdir(os.path.join(memes_dir, d))
+        )
+        
+        # 获取当前配置中的所有英文分类
+        configured_categories = set(english for english in emotion_map.values())
+        
+        # 删除多余的映射（配置中有但文件夹中没有的）
+        for chinese, english in list(emotion_map.items()):
+            if english not in existing_categories:
+                del emotion_map[chinese]
+        
+        # 添加缺失的映射（文件夹中有但配置中没有的）
+        configured_english = set(emotion_map.values())
+        for category in existing_categories:
+            if category not in configured_english:
+                emotion_map[f"未命名_{category}"] = category
+        
+        # 更新配置
+        bot_config["emotion_map"] = emotion_map
+        bot_config.save_config()
+        
+        # 同时更新 Flask 应用配置
+        plugin_config["emotion_map"] = emotion_map
+        
+        return True
+    except Exception as e:
+        current_app.logger.error(f"同步配置失败: {str(e)}")
+        raise
+
+# 添加同步配置的 API 端点
+@api.route("/sync/config", methods=["POST"])
+def sync_config():
+    """同步配置与文件夹结构"""
+    try:
+        sync_emotion_map()
+        return jsonify({"message": "配置同步成功"}), 200
+    except Exception as e:
+        return jsonify({
+            "message": f"配置同步失败: {str(e)}",
+            "detail": traceback.format_exc()
+        }), 500
 
 

@@ -86,8 +86,6 @@ def start_server(config=None):
     if config is not None:
         # 确保配置中包含必要的信息
         if hasattr(config, 'get'):
-            print("Debug - 收到的配置对象:", config)  # 调试输出
-            print("Debug - config.get('config'):", config.get('config'))  # 调试输出
             
             app.config["PLUGIN_CONFIG"] = {
                 "emotion_map": config.get("emotion_map", {}),
@@ -96,7 +94,6 @@ def start_server(config=None):
                 "plugin_dir": config.get("plugin_dir"),
                 "bot_config": config.get("config"),  # 使用 bot_config 作为键名
             }
-            print("Debug - 设置的 PLUGIN_CONFIG:", app.config["PLUGIN_CONFIG"])  # 调试输出
         else:
             print("警告: 配置格式不正确")
             app.config["PLUGIN_CONFIG"] = config

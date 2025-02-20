@@ -77,33 +77,83 @@ document.addEventListener("DOMContentLoaded", () => {
     categoriesContainer.innerHTML = "";
 
     for (const category in data) {
-      // 创建分类容器，并添加 id 用于锚点跳转（注意 id 不要包含空格或特殊字符）
       const categoryDiv = document.createElement("div");
       categoryDiv.classList.add("category");
-      categoryDiv.id = "category-" + category; // 使用英文名称
+      categoryDiv.id = "category-" + category;
 
-      // 分类标题：中文名（英文名）
+      // 分类标题容器
+      const titleContainer = document.createElement("div");
+      titleContainer.classList.add("category-title-container");
+
+      // 分类标题
       const categoryTitle = document.createElement("h3");
       const chineseName = getChineseName(emotionMap, category);
-      categoryTitle.textContent = `${chineseName} (${category})`;
+      const isUnnamed = chineseName.startsWith("未命名_");
+      categoryTitle.textContent = isUnnamed
+        ? `${category} (需要设置中文名)`
+        : `${chineseName} (${category})`;
 
-      // 创建标题容器用于标题和删除分类按钮
-      const headerDiv = document.createElement("div");
-      headerDiv.style.display = "flex";
-      headerDiv.style.justifyContent = "space-between";
-      headerDiv.style.alignItems = "center";
-      headerDiv.appendChild(categoryTitle);
+      // 编辑按钮
+      const editButton = document.createElement("button");
+      editButton.classList.add("edit-category-btn");
+      editButton.textContent = isUnnamed ? "设置中文名" : "编辑";
+      editButton.onclick = () => {
+        const editContainer = document.createElement("div");
+        editContainer.classList.add("edit-category-container");
 
-      // 删除分类按钮
-      const deleteCategoryBtn = document.createElement("button");
-      deleteCategoryBtn.classList.add("delete-category-btn");
-      deleteCategoryBtn.textContent = "删除分类";
-      deleteCategoryBtn.addEventListener("click", () =>
-        deleteCategory(category)
-      );
-      headerDiv.appendChild(deleteCategoryBtn);
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = isUnnamed ? "" : chineseName;
+        input.placeholder = "请输入中文名称";
 
-      categoryDiv.appendChild(headerDiv);
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "保存";
+        saveBtn.onclick = async () => {
+          const newChinese = input.value.trim();
+          if (newChinese) {
+            try {
+              const response = await fetch("/api/category/update_mapping", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  english: category,
+                  chinese: newChinese,
+                }),
+              });
+              if (!response.ok) {
+                throw new Error("更新映射失败");
+              }
+              // 重新加载数据
+              fetchEmojis();
+            } catch (error) {
+              console.error("更新映射失败:", error);
+              alert("更新映射失败: " + error.message);
+            }
+          }
+        };
+
+        editContainer.appendChild(input);
+        editContainer.appendChild(saveBtn);
+
+        // 如果已经存在编辑容器，则替换
+        const existingEdit = categoryDiv.querySelector(
+          ".edit-category-container"
+        );
+        if (existingEdit) {
+          existingEdit.replaceWith(editContainer);
+        } else {
+          titleContainer.appendChild(editContainer);
+        }
+      };
+
+      // 如果是未命名的类别，自动显示编辑界面
+      if (isUnnamed) {
+        editButton.click();
+      }
+
+      titleContainer.appendChild(categoryTitle);
+      titleContainer.appendChild(editButton);
+      categoryDiv.appendChild(titleContainer);
 
       // 创建表情列表容器
       const emojiListDiv = document.createElement("div");
@@ -587,6 +637,26 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // 添加同步配置的函数
+  async function syncConfig() {
+    try {
+      const response = await fetch("/api/sync/config", {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error("同步配置失败");
+      }
+      // 重新加载数据
+      await fetchEmojis();
+    } catch (error) {
+      console.error("同步配置失败:", error);
+      alert("同步配置失败: " + error.message);
+    }
+  }
+
   // 初始化加载数据
   fetchEmojis();
+
+  // 同步配置
+  syncConfig();
 });

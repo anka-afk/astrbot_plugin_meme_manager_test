@@ -376,3 +376,48 @@ input[type="file"] {
 .mapping-input button:hover {
   background-color: #218838;
 }
+
+.category-title-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.edit-category-btn {
+  padding: 5px 10px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.edit-category-btn:hover {
+  background-color: #45a049;
+}
+
+.edit-category-container {
+  display: flex;
+  gap: 10px;
+  margin-left: 10px;
+}
+
+.edit-category-container input {
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.edit-category-container button {
+  padding: 5px 10px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.edit-category-container button:hover {
+  background-color: #1976d2;
+}
