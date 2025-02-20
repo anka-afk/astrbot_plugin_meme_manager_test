@@ -103,33 +103,17 @@ def get_emotions():
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
         current_app.logger.debug(f"plugin_config: {plugin_config}")
         
-        bot_config = plugin_config.get("bot_config", {})
+        bot_config = plugin_config.get("bot_config")
         current_app.logger.debug(f"bot_config: {bot_config}")
-        current_app.logger.debug(f"bot_config type: {type(bot_config)}")
         
-        # 尝试从不同位置获取 tag_descriptions
-        tag_descriptions = None
-        
-        # 1. 如果 bot_config 是 AstrBotConfig 实例
-        if hasattr(bot_config, 'config'):
-            current_app.logger.debug("从 AstrBotConfig 实例获取配置")
-            config_dict = bot_config.config
-            if isinstance(config_dict, dict):
-                tag_descriptions = config_dict.get("tag_descriptions")
-                current_app.logger.debug(f"从 config_dict 获取的 tag_descriptions: {tag_descriptions}")
-        
-        # 2. 如果 bot_config 是字典
-        if not tag_descriptions and isinstance(bot_config, dict):
-            current_app.logger.debug("从字典获取配置")
-            tag_descriptions = bot_config.get("tag_descriptions")
-            current_app.logger.debug(f"从字典获取的 tag_descriptions: {tag_descriptions}")
-        
-        # 3. 如果都没有找到，返回空字典
-        if not tag_descriptions:
-            current_app.logger.debug("未找到 tag_descriptions，返回空字典")
-            tag_descriptions = {}
+        if not bot_config:
+            current_app.logger.debug("未找到 bot_config，返回空字典")
+            return jsonify({})
             
-        current_app.logger.debug(f"最终返回的 tag_descriptions: {tag_descriptions}")
+        # 直接从 self.config 获取
+        tag_descriptions = bot_config.config.get("tag_descriptions", {})
+        current_app.logger.debug(f"从 bot_config.config 获取的 tag_descriptions: {tag_descriptions}")
+            
         return jsonify(tag_descriptions)
     except Exception as e:
         current_app.logger.error(f"获取标签描述失败: {str(e)}")

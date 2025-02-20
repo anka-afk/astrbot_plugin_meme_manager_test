@@ -427,103 +427,55 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 添加同步相关的函数
+  // 修改检查同步状态的函数
   async function checkSyncStatus() {
-    const maxRetries = 10; // 最大重试次数
-    const retryDelay = 1000; // 重试延迟（毫秒）
+    const statusDiv = document.getElementById("sync-status");
+    if (!statusDiv) return;
 
-    // 获取按钮并显示加载状态
-    const btn = document.getElementById("check-sync-btn");
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "检查中...";
-    }
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
-
-        const response = await fetch("/api/sync/status", {
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(
-            `获取同步状态失败 (${response.status}): ${
-              errorData.error
-            }\n详细信息: ${errorData.detail}${
-              errorData.traceback ? "\n堆栈: " + errorData.traceback : ""
-            }`
-          );
-        }
-        const data = await response.json();
-
-        // 更新UI显示
-        document.getElementById("upload-count").textContent =
-          data.to_upload?.length || 0;
-        document.getElementById("download-count").textContent =
-          data.to_download?.length || 0;
-
-        // 显示检查完成通知
-        const uploadCount = data.to_upload?.length || 0;
-        const downloadCount = data.to_download?.length || 0;
-
-        let message;
-        if (uploadCount === 0 && downloadCount === 0) {
-          message = "检查完成：所有文件已同步！";
-        } else {
-          message = `检查完成：发现 ${uploadCount} 个待上传文件，${downloadCount} 个待下载文件`;
-        }
-        alert(message);
-
-        return data;
-      } catch (error) {
-        console.error(
-          `检查同步状态失败 (尝试 ${attempt + 1}/${maxRetries}):`,
-          error
-        );
-
-        if (error.name === "AbortError") {
-          console.log("请求超时，准备重试...");
-        }
-
-        if (attempt === maxRetries - 1) {
-          // 最后一次尝试失败，显示错误消息
-          if (error.message) {
-            console.error("错误详情:", error.message);
-          }
-          if (error.stack) {
-            console.error("JavaScript堆栈:", error.stack);
-          }
-          alert("检查同步状态失败: " + error.message);
-        } else {
-          // 等待一段时间后重试
-          await new Promise((resolve) => setTimeout(resolve, retryDelay));
-        }
-      } finally {
-        // 恢复按钮状态
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = "检查同步状态";
-        }
+    try {
+      const response = await fetch("/api/sync/status");
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || "检查同步状态失败");
       }
+      const status = await response.json();
+
+      // 更新状态显示
+      let statusHtml = "";
+      if (status.to_upload && status.to_upload.length > 0) {
+        statusHtml += "<p>待上传文件：</p><ul>";
+        status.to_upload.slice(0, 5).forEach((file) => {
+          statusHtml += `<li>${file.category}/${file.filename}</li>`;
+        });
+        if (status.to_upload.length > 5) {
+          statusHtml += "<li>...</li>";
+        }
+        statusHtml += "</ul>";
+      }
+
+      if (status.to_download && status.to_download.length > 0) {
+        statusHtml += "<p>待下载文件：</p><ul>";
+        status.to_download.slice(0, 5).forEach((file) => {
+          statusHtml += `<li>${file.category}/${file.filename}</li>`;
+        });
+        if (status.to_download.length > 5) {
+          statusHtml += "<li>...</li>";
+        }
+        statusHtml += "</ul>";
+      }
+
+      if (!statusHtml) {
+        statusHtml = "<p>所有文件已同步！</p>";
+      }
+
+      statusDiv.innerHTML = statusHtml;
+    } catch (error) {
+      console.error("检查同步状态失败:", error);
+      statusDiv.innerHTML = `
+        <p style="color: red;">检查同步状态失败: ${error.message}</p>
+        <p>请点击"检查同步状态"按钮手动检查</p>
+      `;
     }
-  }
-
-  // 修改自动刷新逻辑
-  let syncStatusInterval;
-
-  function startSyncStatusPolling() {
-    // 清除可能存在的旧定时器
-    if (syncStatusInterval) {
-      clearInterval(syncStatusInterval);
-    }
-
-    // 设置新的定时器，改为每5分钟检查一次
-    syncStatusInterval = setInterval(checkSyncStatus, 5 * 60 * 1000);
   }
 
   async function syncToRemote() {
@@ -614,22 +566,8 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("download-sync-btn")
     ?.addEventListener("click", syncFromRemote);
 
-  // 初始检查同步状态并启动轮询
-  checkSyncStatus().then(() => startSyncStatusPolling());
-
-  // 在页面加载时启动轮询
-  document.addEventListener("DOMContentLoaded", () => {
-    // ... 现有代码 ...
-
-    // 在页面隐藏时停止轮询
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        clearInterval(syncStatusInterval);
-      } else {
-        checkSyncStatus().then(() => startSyncStatusPolling());
-      }
-    });
-  });
+  // 初始检查一次同步状态
+  checkSyncStatus();
 
   // 添加同步配置的函数
   async function syncConfig() {
