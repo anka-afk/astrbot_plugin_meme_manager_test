@@ -12,6 +12,7 @@ from flask import (
 )
 from .backend.api import api
 from .utils import generate_secret_key
+import psutil  # 用于进程管理
 
 app = Flask(__name__)
 
@@ -20,6 +21,36 @@ app.register_blueprint(api, url_prefix="/api")
 
 
 SERVER_LOGIN_KEY = None
+SERVER_PROCESS = None
+
+
+def is_webui_running(port=5000):
+    """检查 WebUI 是否已经在运行"""
+    try:
+        # 检查端口是否被占用
+        for conn in psutil.net_connections():
+            if conn.laddr.port == port and conn.status == 'LISTEN':
+                return True
+        return False
+    except:
+        return False
+
+
+def kill_existing_webui(port=5000):
+    """关闭已存在的 WebUI 进程"""
+    try:
+        for proc in psutil.process_iter(['pid', 'name', 'connections']):
+            try:
+                for conn in proc.connections():
+                    if conn.laddr.port == port and conn.status == 'LISTEN':
+                        proc.terminate()
+                        proc.wait(timeout=5)
+                        return True
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+    except:
+        pass
+    return False
 
 
 @app.before_request
@@ -67,13 +98,21 @@ def shutdown_api():
     return "Server shutting down..."
 
 
-def run_server(port):
-    app.run(debug=True, host="0.0.0.0", use_reloader=False, port=port)
+def run_server(port=5000):
+    """运行服务器"""
+    app.run(host="0.0.0.0", port=port)
 
 
-# 用于启动服务器的函数
 def start_server(config=None):
-    global SERVER_LOGIN_KEY
+    """启动服务器"""
+    global SERVER_LOGIN_KEY, SERVER_PROCESS
+    
+    # 如果已有进程在运行，先关闭它
+    port = config.get("webui_port", 5000) if config else 5000
+    if is_webui_running(port):
+        print(f"检测到端口 {port} 已被占用，尝试关闭现有进程...")
+        kill_existing_webui(port)
+    
     SERVER_LOGIN_KEY = generate_secret_key(8)
     print("当前秘钥为:", SERVER_LOGIN_KEY)
 
@@ -87,7 +126,7 @@ def start_server(config=None):
             app.config["PLUGIN_CONFIG"] = {
                 "memes_path": config.get("memes_path", "memes"),
                 "img_sync": config.get("img_sync"),
-                "astr_config": config.get("astr_config"),  # 确保传递 AstrBotConfig
+                "astr_config": config.get("astr_config"),
             }
             
             # 设置表情包目录
@@ -104,35 +143,26 @@ def start_server(config=None):
                 except Exception as e:
                     print(f"启动时同步配置失败: {e}")
 
-    # 计算绝对路径并存入配置
-    _base_dir = os.path.dirname(os.path.abspath(__file__))
-    PLUGIN_CONFIG = app.config.get("PLUGIN_CONFIG", {})
-
-    memes_path = PLUGIN_CONFIG.get("memes_path", "memes")
-    if not os.path.isabs(memes_path):
-        MEMES_DIR = os.path.abspath(os.path.join(_base_dir, memes_path))
-    else:
-        MEMES_DIR = memes_path
-
-    # 将计算好的 MEMES_DIR 存储到 app.config 中
-    app.config["MEMES_DIR"] = MEMES_DIR
-
-    # 启动服务器
-    port = config.get("bot_config", {}).get("webui_port", 5000) if config else 5000
-    server_process = multiprocessing.Process(target=run_server, args=(port,))
-    server_process.start()
-    return SERVER_LOGIN_KEY, server_process
+    # 启动新进程
+    SERVER_PROCESS = multiprocessing.Process(target=run_server, args=(port,))
+    SERVER_PROCESS.start()
+    return SERVER_LOGIN_KEY, SERVER_PROCESS
 
 
-# 用于关闭服务器的函数
 def shutdown_server(server_process):
+    """关闭服务器"""
     try:
-        plugin_config = app.config.get("PLUGIN_CONFIG", {})
-        port = plugin_config.get("webui_port", 5000)
-        requests.post(f"http://127.0.0.1:{port}/shutdown_api")
-        server_process.join(timeout=5)  # 等待进程退出
-        if server_process.is_alive():
+        if server_process and server_process.is_alive():
+            plugin_config = app.config.get("PLUGIN_CONFIG", {})
+            port = plugin_config.get("webui_port", 5000)
+            try:
+                requests.post(f"http://127.0.0.1:{port}/shutdown_api")
+            except:
+                pass
             server_process.terminate()
+            server_process.join(timeout=5)
+            if server_process.is_alive():
+                server_process.kill()
     except Exception as e:
         print("关闭服务器时出错:", e)
 
