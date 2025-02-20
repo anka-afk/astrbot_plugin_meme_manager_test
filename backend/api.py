@@ -79,10 +79,17 @@ def get_emotions():
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
         astr_config = plugin_config.get("astr_config")
         
-        # 获取配置中的标签描述
-        tag_descriptions = astr_config.get("tag_descriptions", {}) if astr_config else {}
+        if not astr_config:
+            raise ValueError("未找到配置对象")
         
-        return jsonify(tag_descriptions)  # 直接返回 tag_descriptions
+        # 直接从 astr_config 对象获取 tag_descriptions
+        tag_descriptions = astr_config.get("tag_descriptions", {})
+        
+        # 添加调试日志
+        current_app.logger.debug(f"astr_config 对象: {astr_config}")
+        current_app.logger.debug(f"tag_descriptions: {tag_descriptions}")
+        
+        return jsonify(tag_descriptions)
     except Exception as e:
         current_app.logger.error(f"获取标签描述失败: {str(e)}")
         current_app.logger.error(f"错误详情: {traceback.format_exc()}")

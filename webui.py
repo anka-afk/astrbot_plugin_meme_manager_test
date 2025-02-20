@@ -127,7 +127,6 @@ def start_server(config=None):
 
     if config is not None:
         if hasattr(config, 'get'):
-            
             app.config["PLUGIN_CONFIG"] = {
                 "memes_path": config.get("memes_path", "memes"),
                 "img_sync": config.get("img_sync"),

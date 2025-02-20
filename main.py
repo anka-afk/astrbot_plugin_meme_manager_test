@@ -99,22 +99,20 @@ class MemeSender(Star):
         self.server_key = None
 
     @filter.command("启动表情包管理服务器")
-    async def start_server_command(self, event: AstrMessageEvent):
+    async def start_webui(self, event: AstrMessageEvent):
         """启动表情包管理服务器的指令，返回访问地址和当前秘钥"""
         yield event.plain_result("表情包管理服务器启动中，请稍候……")
 
         try:
-            # 获取完整配置对象
-            webui_config = {
-                "memes_path": self.meme_path,
-                "img_sync": self.img_sync,  # 传递 img_sync 实例
-                "astr_config": self.astr_config,  # 传递 AstrBotConfig 对象
-                "webui_port": self.config.get("webui_port", 5000),
-            }
-
-            # 启动服务器
-            secret_key, process = start_server(webui_config)
-            self.server_process = process
+            print("当前 astr_config:", self.astr_config)  # 添加调试输出
+            print("当前 tag_descriptions:", self.astr_config.get("tag_descriptions"))  # 添加调试输出
+            
+            server_key, server_process = start_server({
+                "memes_path": self.config.get("memes_path", "memes"),
+                "img_sync": self.img_sync,
+                "astr_config": self.astr_config,
+            })
+            self.server_process = server_process
 
             # 获取公网 IP
             public_ip = await get_public_ip()
@@ -122,7 +120,7 @@ class MemeSender(Star):
             yield event.plain_result(
                 f"表情包管理服务器已启动！\n"
                 f"访问地址：http://{public_ip}:5000\n"
-                f"当前秘钥：{secret_key}"
+                f"当前秘钥：{server_key}"
             )
         except Exception as e:
             self.logger.error(f"启动表情包管理服务器失败: {str(e)}")
