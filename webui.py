@@ -152,6 +152,11 @@ def create_app(config=None):
     
     # 确保配置中包含必要的信息
     if hasattr(config, 'get'):
+        # 调试输出
+        print("Debug - 配置对象类型:", type(config))
+        print("Debug - 配置对象属性:", dir(config))
+        print("Debug - 配置对象方法:", [attr for attr in dir(config) if callable(getattr(config, attr))])
+        
         app.config["PLUGIN_CONFIG"] = {
             "memes_path": config.get("memes_path", "memes"),
             "img_sync": config.get("img_sync"),
