@@ -4,7 +4,10 @@ from .core.sync_manager import SyncManager
 from .providers.stardots_provider import StarDotsProvider
 import multiprocessing
 import sys
+import asyncio
+import logging
 
+logger = logging.getLogger(__name__)
 
 class ImageSync:
     """图片同步客户端
@@ -51,6 +54,8 @@ class ImageSync:
         self.sync_manager = SyncManager(
             image_host=self.provider, local_dir=Path(local_dir)
         )
+        self.sync_process = None
+        self._sync_task = None
 
     def check_status(self) -> Dict[str, List[Dict[str, str]]]:
         """
@@ -64,6 +69,62 @@ class ImageSync:
             }
         """
         return self.sync_manager.check_sync_status()
+
+    async def start_sync(self, task: str) -> bool:
+        """
+        启动同步任务并异步等待完成
+        
+        Args:
+            task: 同步任务类型 ('upload', 'download', 'sync_all')
+            
+        Returns:
+            同步是否成功
+        """
+        # 如果已有正在运行的同步任务，先停止它
+        if self.sync_process and self.sync_process.is_alive():
+            logger.warning("已有正在运行的同步任务，将先停止它")
+            self.stop_sync()
+
+        # 检查是否需要同步
+        status = self.check_status()
+        if task == 'upload' and not status.get("to_upload"):
+            logger.info("没有文件需要上传")
+            return True
+        elif task == 'download' and not status.get("to_download"):
+            logger.info("没有文件需要下载")
+            return True
+
+        # 创建并启动进程
+        self.sync_process = multiprocessing.Process(
+            target=run_sync_process,
+            args=(self.provider.config, self.sync_manager.local_dir, task)
+        )
+        self.sync_process.start()
+
+        # 创建异步任务来等待进程完成
+        loop = asyncio.get_event_loop()
+        self._sync_task = loop.run_in_executor(None, self.sync_process.join)
+        
+        try:
+            # 等待进程完成
+            await self._sync_task
+            return self.sync_process.exitcode == 0
+        except Exception as e:
+            logger.error(f"同步任务异常: {str(e)}")
+            self.stop_sync()
+            return False
+
+    def stop_sync(self):
+        """停止当前正在运行的同步任务"""
+        if self.sync_process and self.sync_process.is_alive():
+            self.sync_process.terminate()
+            self.sync_process.join(timeout=5)
+            if self.sync_process.is_alive():
+                self.sync_process.kill()
+            self.sync_process = None
+        if self._sync_task:
+            self._sync_task.cancel()
+            self._sync_task = None
 
     def upload_to_remote(self) -> multiprocessing.Process:
         """
@@ -132,23 +193,15 @@ class ImageSync:
         """
         在独立进程中运行同步任务
         """
-        sync = ImageSync(self.provider.config, self.sync_manager.local_dir)
+        # 创建进程对象
+        process = multiprocessing.Process(
+            target=run_sync_process,
+            args=(self.provider.config, self.sync_manager.local_dir, task)
+        )
         
-        if task == 'upload':
-            status = sync.check_status()
-            if not status.get("to_upload"):
-                return multiprocessing.Process()  # 没有文件需要上传，返回空进程
-            success = sync.upload_to_remote()
-            return success.get_process()
-        elif task == 'download':
-            status = sync.check_status()
-            if not status.get("to_download"):
-                return multiprocessing.Process()  # 没有文件需要下载，返回空进程
-            success = sync.download_to_local()
-            return success.get_process()
-        elif task == 'sync_all':
-            success = sync.sync_all()
-            return success.get_process()
+        # 启动进程
+        process.start()
+        return process
 
 def run_sync_process(config: Dict[str, str], local_dir: Union[str, Path], task: str):
     """
@@ -159,14 +212,14 @@ def run_sync_process(config: Dict[str, str], local_dir: Union[str, Path], task: 
     if task == 'upload':
         status = sync.check_status()
         if not status.get("to_upload"):
-            return 0  # 没有文件需要上传，返回成功状态码
-        success = sync.upload_to_remote()
+            sys.exit(0)  # 没有文件需要上传，返回成功状态码
+        success = sync.sync_manager.sync_to_remote()
         sys.exit(0 if success else 1)
     elif task == 'download':
         status = sync.check_status()
         if not status.get("to_download"):
-            return 0  # 没有文件需要下载，返回成功状态码
-        success = sync.download_to_local()
+            sys.exit(0)  # 没有文件需要下载，返回成功状态码
+        success = sync.sync_manager.sync_from_remote()
         sys.exit(0 if success else 1)
     elif task == 'sync_all':
         success = sync.sync_all()
