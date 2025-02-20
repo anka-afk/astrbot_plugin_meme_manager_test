@@ -37,9 +37,11 @@ class MemeSender(Star):
               self.astr_config.get("category_descriptions", {}).get("angry", "未找到"))
         
         # 加载配置
-        self.tag_descriptions = self.config.get(
-            "category_descriptions",
-            {
+        self.tag_descriptions = self.astr_config.get("category_descriptions", {})
+        
+        # 设置默认配置
+        if not self.tag_descriptions:  # 如果配置为空，使用默认值
+            self.tag_descriptions = {
                 "angry": "表达愤怒或不满的场景",
                 "happy": "表达开心或愉悦的场景",
                 "sad": "表达悲伤或遗憾的场景",
@@ -61,7 +63,10 @@ class MemeSender(Star):
                 "sleep": "表达疲惫或休息的场景",
                 "sigh": "表达叹息的场景"
             }
-        )
+            # 保存到配置
+            self.astr_config["category_descriptions"] = self.tag_descriptions
+            self.astr_config.save_config()
+        
         self.image_host = self.config.get("image_host", "stardots")
         self.image_host_key = self.config.get("image_host_key", "")
         self.image_host_secret = self.config.get("image_host_secret", "")

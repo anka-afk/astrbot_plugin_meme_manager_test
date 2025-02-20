@@ -130,8 +130,8 @@ def start_server(config=None):
             astr_config = config.get("astr_config")
             if astr_config:
                 # 检查配置
-                tag_descriptions = astr_config.get("category_descriptions", {})
-                angry_desc = tag_descriptions.get("angry", "未找到")
+                descriptions = astr_config.get("category_descriptions", {})
+                angry_desc = descriptions.get("angry", "未找到")
                 print(f"[DEBUG] webui启动前 angry 的描述: {angry_desc}")
             
             app.config["PLUGIN_CONFIG"] = {

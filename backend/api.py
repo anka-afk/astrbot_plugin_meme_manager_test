@@ -114,11 +114,11 @@ def delete_category():
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
         astr_config = plugin_config.get("astr_config")
         if astr_config:
-            # 从 tag_descriptions 中移除
-            tag_descriptions = astr_config.get("tag_descriptions", {})
-            if category in tag_descriptions:
-                del tag_descriptions[category]
-                astr_config["tag_descriptions"] = tag_descriptions
+            # 从配置中移除
+            descriptions = astr_config.get("category_descriptions", {})
+            if category in descriptions:
+                del descriptions[category]
+                astr_config["category_descriptions"] = descriptions
                 astr_config.save_config()
 
         return jsonify({"message": "Category deleted successfully"}), 200
@@ -196,9 +196,9 @@ def update_category_description():
             return jsonify({"message": "Config not found"}), 404
             
         # 更新描述
-        tag_descriptions = astr_config.get("tag_descriptions", {})
-        tag_descriptions[category] = description
-        astr_config["tag_descriptions"] = tag_descriptions
+        descriptions = astr_config.get("category_descriptions", {})
+        descriptions[category] = description
+        astr_config["category_descriptions"] = descriptions
         
         # 保存配置
         astr_config.save_config()
@@ -228,10 +228,10 @@ def restore_category():
         os.makedirs(category_path, exist_ok=True)
 
         # 确保配置中有该类别
-        tag_descriptions = astr_config.get("tag_descriptions", {})
-        if category not in tag_descriptions:
-            tag_descriptions[category] = "请添加描述"
-            astr_config["tag_descriptions"] = tag_descriptions
+        descriptions = astr_config.get("category_descriptions", {})
+        if category not in descriptions:
+            descriptions[category] = "请添加描述"
+            astr_config["category_descriptions"] = descriptions
             astr_config.save_config()
 
         return jsonify({"message": "Category restored successfully"}), 200
@@ -293,11 +293,11 @@ def rename_category():
         os.rename(old_path, new_path)
 
         # 更新配置
-        tag_descriptions = astr_config.get("tag_descriptions", {})
-        if old_name in tag_descriptions:
-            description = tag_descriptions.pop(old_name)
-            tag_descriptions[new_name] = description
-            astr_config["tag_descriptions"] = tag_descriptions
+        descriptions = astr_config.get("category_descriptions", {})
+        if old_name in descriptions:
+            description = descriptions.pop(old_name)
+            descriptions[new_name] = description
+            astr_config["category_descriptions"] = descriptions
             astr_config.save_config()
 
         return jsonify({"message": "Category renamed successfully"}), 200
