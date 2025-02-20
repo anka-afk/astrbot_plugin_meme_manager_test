@@ -94,16 +94,9 @@ class MemeSender(Star):
                     local_dir=self.meme_path
                 )
 
-        # 启动 WebUI
+        # 用于存储服务器进程
         self.server_process = None
         self.server_key = None
-        if self.config.get("webui_enabled", True):
-            self.server_key, self.server_process = start_server({
-                "memes_path": self.config.get("memes_path", "memes"),
-                "img_sync": self.config.get("img_sync"),
-                "astr_config": self.astr_config,  # 传递 AstrBotConfig 对象
-                **self.config
-            })
 
     @filter.command("启动表情包管理服务器")
     async def start_server_command(self, event: AstrMessageEvent):
