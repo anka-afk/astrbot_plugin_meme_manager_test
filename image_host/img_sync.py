@@ -43,6 +43,8 @@ class ImageSync:
             config: 包含图床配置信息的字典，必须包含 key、secret 和 space
             local_dir: 本地图片目录的路径
         """
+        self.config = config  # 保存完整配置
+        self.local_dir = Path(local_dir)  # 保存本地目录路径
         self.provider = StarDotsProvider({
             "key": config["key"],
             "secret": config["secret"],
@@ -51,7 +53,7 @@ class ImageSync:
         })
         self.sync_manager = SyncManager(
             image_host=self.provider, 
-            local_dir=Path(local_dir)
+            local_dir=self.local_dir
         )
         self.sync_process = None
         self._sync_task = None
@@ -93,10 +95,10 @@ class ImageSync:
             logger.info("没有文件需要下载")
             return True
 
-        # 创建并启动进程
+        # 创建并启动进程，使用 self.local_dir 而不是 sync_manager.local_dir
         self.sync_process = multiprocessing.Process(
             target=run_sync_process,
-            args=(self.provider.config, self.sync_manager.local_dir, task)
+            args=(self.config, str(self.local_dir), task)  # 使用字符串形式的路径
         )
         self.sync_process.start()
 
@@ -195,14 +197,14 @@ class ImageSync:
         # 创建进程对象
         process = multiprocessing.Process(
             target=run_sync_process,
-            args=(self.provider.config, self.sync_manager.local_dir, task)
+            args=(self.config, str(self.local_dir), task)
         )
         
         # 启动进程
         process.start()
         return process
 
-def run_sync_process(config: Dict[str, str], local_dir: Union[str, Path], task: str):
+def run_sync_process(config: Dict[str, str], local_dir: str, task: str):
     """
     在独立进程中运行同步任务
     """
