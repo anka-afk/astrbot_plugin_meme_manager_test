@@ -78,6 +78,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const emojiGrid = document.createElement("div");
       emojiGrid.className = "emoji-grid";
+      // 设置网格布局
+      emojiGrid.style.display = "flex";
+      emojiGrid.style.flexWrap = "wrap";
+      emojiGrid.style.gap = "10px";
+      emojiGrid.style.padding = "10px";
 
       emojis.forEach((emoji) => {
         const emojiItem = document.createElement("div");
@@ -88,10 +93,10 @@ document.addEventListener("DOMContentLoaded", () => {
         emojiItem.style.backgroundSize = "contain";
         emojiItem.style.backgroundPosition = "center";
         emojiItem.style.backgroundRepeat = "no-repeat";
-        emojiItem.style.margin = "5px";
         emojiItem.style.cursor = "pointer";
         emojiItem.style.border = "1px solid #ddd";
         emojiItem.style.borderRadius = "4px";
+        emojiItem.style.flexShrink = "0"; // 防止项目被压缩
 
         // 使用 data-bg 存储图片URL
         emojiItem.setAttribute("data-bg", `/memes/${category}/${emoji}`);
@@ -104,7 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 懒加载背景图片
     const lazyBackgrounds = document.querySelectorAll(".emoji-item");
-
     const observer = new IntersectionObserver(
       (entries, observer) => {
         entries.forEach((entry) => {
@@ -121,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     lazyBackgrounds.forEach((item) => {
-      observer.observe(item); // 观察每个表情包
+      observer.observe(item);
     });
 
     // 添加编辑描述的事件监听器
