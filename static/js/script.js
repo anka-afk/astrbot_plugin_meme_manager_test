@@ -2,19 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const categoriesContainer = document.getElementById("emoji-categories");
   const addCategoryForm = document.getElementById("add-category-form");
 
-  // 获取中文-英文映射
-  async function fetchEmotions() {
-    try {
-      const response = await fetch("/api/emotions");
-      if (!response.ok) throw new Error("响应异常");
-      return await response.json();
-    } catch (error) {
-      console.error("加载 emotions.json 失败", error);
-      return {};
-    }
-  }
-
-  // 获取所有表情包数据
+  // 获取表情包数据和描述
   async function fetchEmojis() {
     try {
       const [emojiResponse, tagDescriptions] = await Promise.all([
@@ -146,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setupEditDescriptionHandlers();
   }
 
-  // 更新侧边栏目录，根据分类数据生成跳转链接
+  // 更新侧边栏目录
   function updateSidebar(data, tagDescriptions) {
     const sidebarList = document.getElementById("sidebar-list");
     if (!sidebarList) return;
@@ -154,11 +142,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     for (const category in data) {
       const li = document.createElement("li");
-      const description =
-        tagDescriptions[category] || `未添加描述的${category}类别`;
       const a = document.createElement("a");
       a.href = "#category-" + category;
-      a.innerHTML = `${category}<br><small style="color: #666">${description}</small>`;
+      a.textContent = category; // 只显示类别名称
       li.appendChild(a);
       sidebarList.appendChild(li);
     }
@@ -232,40 +218,42 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 添加分类：通过新表单输入中文名称和英文名称
+  // 添加分类
   const addCategoryBtn = document.getElementById("add-category-btn");
   if (addCategoryBtn && addCategoryForm) {
     addCategoryBtn.addEventListener("click", () => {
       addCategoryForm.style.display = "block";
     });
   }
+
   const saveCategoryBtn = document.getElementById("save-category-btn");
   if (saveCategoryBtn) {
     saveCategoryBtn.addEventListener("click", async () => {
-      const chineseInput = document.getElementById("new-category-chinese");
-      const englishInput = document.getElementById("new-category-english");
-      const chineseName = chineseInput?.value.trim();
-      const englishName = englishInput?.value.trim();
-      if (chineseName && englishName) {
+      const categoryInput = document.getElementById("new-category-english");
+      const categoryName = categoryInput?.value.trim();
+
+      if (categoryName) {
         try {
-          const response = await fetch("/api/category/add", {
+          // 创建类别目录
+          const response = await fetch("/api/category/restore", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chinese: chineseName,
-              english: englishName,
-            }),
+            body: JSON.stringify({ category: categoryName }),
           });
+
           if (!response.ok) {
-            console.error("添加分类失败，响应异常");
+            throw new Error("添加分类失败");
           }
+
           addCategoryForm.style.display = "none";
-          // 清空输入框
-          chineseInput.value = "";
-          englishInput.value = "";
-          fetchEmojis();
+          categoryInput.value = "";
+
+          // 重新加载数据
+          await fetchEmojis();
+          await checkSyncStatus();
         } catch (error) {
           console.error("添加分类失败", error);
+          alert("添加分类失败: " + error.message);
         }
       }
     });
@@ -465,6 +453,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 添加同步按钮的事件监听器
+  document
+    .getElementById("manual-sync-btn")
+    ?.addEventListener("click", async () => {
+      try {
+        await syncConfig();
+        await checkSyncStatus(); // 同步后检查状态
+      } catch (error) {
+        console.error("手动同步失败:", error);
+      }
+    });
+
   document
     .getElementById("check-sync-btn")
     ?.addEventListener("click", checkSyncStatus);

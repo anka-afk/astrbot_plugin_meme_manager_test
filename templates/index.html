@@ -16,11 +16,17 @@
         <!-- 同步控制面板 -->
         <div class="sync-panel">
           <h3>同步控制</h3>
+          <div class="sync-control-buttons">
+            <button id="manual-sync-btn" class="manual-sync-btn">
+              手动同步配置
+            </button>
+            <hr class="sync-divider" />
+            <button id="check-sync-btn">检查同步状态</button>
+          </div>
           <div id="sync-status">
             <p>正在检查同步状态...</p>
           </div>
           <div class="sync-buttons">
-            <button id="check-sync-btn">检查同步状态</button>
             <button id="upload-sync-btn">同步到云端</button>
             <button id="download-sync-btn">从云端同步</button>
           </div>
@@ -39,13 +45,8 @@
         <div id="add-category-form" style="display: none">
           <input
             type="text"
-            id="new-category-chinese"
-            placeholder="输入中文名称"
-          />
-          <input
-            type="text"
             id="new-category-english"
-            placeholder="输入英文名称"
+            placeholder="输入类别名称"
           />
           <button id="save-category-btn">保存分类</button>
         </div>
