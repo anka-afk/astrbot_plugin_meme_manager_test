@@ -80,10 +80,9 @@ def get_emotions():
         astr_config = plugin_config.get("astr_config")
         
         # 获取配置中的标签描述
-        tag_descriptions = astr_config["tag_descriptions"] if astr_config else {}
-        current_app.logger.debug(f"从配置获取的 tag_descriptions: {tag_descriptions}")
+        tag_descriptions = astr_config.get("tag_descriptions", {}) if astr_config else {}
         
-        return jsonify(tag_descriptions)
+        return jsonify(tag_descriptions)  # 直接返回 tag_descriptions
     except Exception as e:
         current_app.logger.error(f"获取标签描述失败: {str(e)}")
         current_app.logger.error(f"错误详情: {traceback.format_exc()}")

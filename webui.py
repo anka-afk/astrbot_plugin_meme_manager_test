@@ -127,8 +127,6 @@ def start_server(config=None):
 
     if config is not None:
         if hasattr(config, 'get'):
-            print("Debug - 收到的配置对象:", config)
-            print("Debug - astr_config:", config.get("astr_config"))
             
             app.config["PLUGIN_CONFIG"] = {
                 "memes_path": config.get("memes_path", "memes"),

@@ -284,26 +284,41 @@ input[type="file"] {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.sync-panel h3 {
-  margin: 0 0 10px;
-  font-size: 16px;
-  color: #495057;
+.sync-panel h3,
+.sync-panel h4 {
+  margin: 0 0 15px;
+  color: #333;
+}
+
+.sync-panel h4 {
+  margin-top: 15px;
+}
+
+.sync-control-buttons {
+  margin-bottom: 15px;
+}
+
+.sync-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.sync-divider {
+  margin: 20px 0;
+  border: none;
+  border-top: 1px solid #dee2e6;
 }
 
 #sync-status {
-  margin: 10px 0;
-  font-size: 14px;
+  margin-top: 10px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
 }
 
 #sync-status p {
   margin: 5px 0;
   color: #666;
-}
-
-.sync-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 .sync-buttons button {
