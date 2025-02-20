@@ -126,7 +126,7 @@ def get_sync_status():
     try:
         # 获取表情包文件夹下的所有目录
         memes_dir = current_app.config["MEMES_DIR"]
-        categories = set(
+        local_categories = set(
             d for d in os.listdir(memes_dir) 
             if os.path.isdir(os.path.join(memes_dir, d))
         )
@@ -134,18 +134,20 @@ def get_sync_status():
         # 获取配置中的类别
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
         astr_config = plugin_config.get("astr_config")
-        tag_descriptions = astr_config.get("tag_descriptions", {}) if astr_config else {}
+        if not astr_config:
+            raise ValueError("未找到配置对象")
+            
+        config_categories = set(astr_config.get("tag_descriptions", {}).keys())
         
         # 比较差异
-        config_categories = set(tag_descriptions.keys())
-        to_add = list(categories - config_categories)
-        to_remove = list(config_categories - categories)
+        missing_in_config = list(local_categories - config_categories)  # 本地有但配置没有
+        deleted_categories = list(config_categories - local_categories)  # 配置有但本地没有
         
         return jsonify({
             "status": "ok",
             "differences": {
-                "to_add": to_add,
-                "to_remove": to_remove
+                "missing_in_config": missing_in_config,  # 需要添加到配置
+                "deleted_categories": deleted_categories,  # 已删除的类别
             }
         })
     except Exception as e:
@@ -200,37 +202,126 @@ def update_category_description():
         return jsonify({"message": f"Failed to update category description: {str(e)}"}), 500
 
 
+@api.route("/category/restore", methods=["POST"])
+def restore_category():
+    """恢复已删除的类别"""
+    try:
+        data = request.get_json()
+        category = data.get("category")
+        if not category:
+            return jsonify({"message": "Category is required"}), 400
+
+        # 获取配置
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        astr_config = plugin_config.get("astr_config")
+        if not astr_config:
+            return jsonify({"message": "Config not found"}), 404
+
+        # 创建类别目录
+        category_path = os.path.join(current_app.config["MEMES_DIR"], category)
+        os.makedirs(category_path, exist_ok=True)
+
+        # 确保配置中有该类别
+        tag_descriptions = astr_config.get("tag_descriptions", {})
+        if category not in tag_descriptions:
+            tag_descriptions[category] = "请添加描述"
+            astr_config["tag_descriptions"] = tag_descriptions
+            astr_config.save_config()
+
+        return jsonify({"message": "Category restored successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Failed to restore category: {str(e)}"}), 500
+
+
+@api.route("/category/remove_from_config", methods=["POST"])
+def remove_from_config():
+    """从配置中删除类别"""
+    try:
+        data = request.get_json()
+        category = data.get("category")
+        if not category:
+            return jsonify({"message": "Category is required"}), 400
+
+        # 获取配置
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        astr_config = plugin_config.get("astr_config")
+        if not astr_config:
+            return jsonify({"message": "Config not found"}), 404
+
+        # 从配置中删除类别
+        tag_descriptions = astr_config.get("tag_descriptions", {})
+        if category in tag_descriptions:
+            del tag_descriptions[category]
+            astr_config["tag_descriptions"] = tag_descriptions
+            astr_config.save_config()
+
+        return jsonify({"message": "Category removed from config successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Failed to remove category from config: {str(e)}"}), 500
+
+
+@api.route("/category/rename", methods=["POST"])
+def rename_category():
+    """重命名类别"""
+    try:
+        data = request.get_json()
+        old_name = data.get("old_name")
+        new_name = data.get("new_name")
+        if not old_name or not new_name:
+            return jsonify({"message": "Old and new category names are required"}), 400
+
+        # 获取配置
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        astr_config = plugin_config.get("astr_config")
+        if not astr_config:
+            return jsonify({"message": "Config not found"}), 404
+
+        # 重命名文件夹
+        old_path = os.path.join(current_app.config["MEMES_DIR"], old_name)
+        new_path = os.path.join(current_app.config["MEMES_DIR"], new_name)
+        if not os.path.exists(old_path):
+            return jsonify({"message": "Category not found"}), 404
+        if os.path.exists(new_path):
+            return jsonify({"message": "New category name already exists"}), 400
+        
+        os.rename(old_path, new_path)
+
+        # 更新配置
+        tag_descriptions = astr_config.get("tag_descriptions", {})
+        if old_name in tag_descriptions:
+            description = tag_descriptions.pop(old_name)
+            tag_descriptions[new_name] = description
+            astr_config["tag_descriptions"] = tag_descriptions
+            astr_config.save_config()
+
+        return jsonify({"message": "Category renamed successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Failed to rename category: {str(e)}"}), 500
+
+
 def sync_config_internal():
     """同步配置与文件夹结构的内部函数"""
     # 获取配置对象
     plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-    current_app.logger.debug(f"plugin_config: {plugin_config}")
-    
     astr_config = plugin_config.get("astr_config")
-    current_app.logger.debug(f"astr_config: {astr_config}")
     
     if not astr_config:
         raise ValueError("未找到配置对象")
 
     # 获取表情包文件夹下的所有目录
     memes_dir = current_app.config["MEMES_DIR"]
-    categories = set(
+    local_categories = set(
         d for d in os.listdir(memes_dir) 
         if os.path.isdir(os.path.join(memes_dir, d))
     )
     
-    # 更新标签描述
-    tag_descriptions = astr_config.get("tag_descriptions", {}).copy()
+    # 获取当前配置
+    tag_descriptions = astr_config.get("tag_descriptions", {})
     
-    # 删除不存在的类别
-    for tag in list(tag_descriptions.keys()):
-        if tag not in categories:
-            del tag_descriptions[tag]
-    
-    # 添加新类别
-    for category in categories:
+    # 添加新类别（本地有但配置没有）
+    for category in local_categories:
         if category not in tag_descriptions:
-            tag_descriptions[category] = f"表达{category}的场景"
+            tag_descriptions[category] = f"请添加描述"
     
     # 更新并保存配置
     astr_config["tag_descriptions"] = tag_descriptions

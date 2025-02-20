@@ -63,19 +63,26 @@ document.addEventListener("DOMContentLoaded", () => {
       categoryDiv.className = "category";
       categoryDiv.id = `category-${category}`;
 
-      const description =
-        tagDescriptions[category] || `未添加描述的${category}类别`;
+      const description = tagDescriptions[category] || `请添加描述`;
       const titleDiv = document.createElement("div");
       titleDiv.className = "category-title";
       titleDiv.innerHTML = `
-        <div class="category-title-container">
-          <h2>${category}</h2>
-          <button class="delete-category-btn" data-category="${category}">删除类别</button>
+        <div class="category-header">
+          <div class="category-name" id="category-name-${category}">${category}</div>
+          <div class="category-actions">
+            <button class="edit-category-btn" onclick="editCategory('${category}')">编辑类别</button>
+            <button class="delete-category-btn" data-category="${category}">删除类别</button>
+          </div>
         </div>
-        <p class="description">${description}</p>
-        <button class="edit-description-btn" data-category="${category}">
-          编辑描述
-        </button>
+        <div class="category-edit-form" id="category-edit-${category}" style="display: none;">
+          <input type="text" class="category-name-input" value="${category}" placeholder="类别名称">
+          <input type="text" class="category-desc-input" value="${description}" placeholder="类别描述">
+          <div class="edit-buttons">
+            <button class="save-edit-btn" onclick="saveCategory('${category}')">保存</button>
+            <button class="cancel-edit-btn" onclick="cancelEdit('${category}')">取消</button>
+          </div>
+        </div>
+        <p class="description" id="category-desc-${category}">${description}</p>
       `;
       categoryDiv.appendChild(titleDiv);
 
@@ -317,24 +324,57 @@ document.addEventListener("DOMContentLoaded", () => {
       let statusHtml = "";
       const { differences } = data;
 
-      if (differences.to_add.length > 0) {
-        statusHtml += "<p>需要添加到配置的类别：</p><ul>";
-        differences.to_add.forEach((category) => {
-          statusHtml += `<li>${category}</li>`;
-        });
-        statusHtml += "</ul>";
+      if (differences.missing_in_config.length > 0) {
+        statusHtml += `
+          <div class="status-section">
+            <h4>新增类别（需要添加到配置）：</h4>
+            <ul>
+              ${differences.missing_in_config
+                .map(
+                  (category) => `
+                <li>
+                  ${category}
+                  <button onclick="syncConfig()" class="sync-btn">同步配置</button>
+                </li>
+              `
+                )
+                .join("")}
+            </ul>
+          </div>
+        `;
       }
 
-      if (differences.to_remove.length > 0) {
-        statusHtml += "<p>需要从配置中移除的类别：</p><ul>";
-        differences.to_remove.forEach((category) => {
-          statusHtml += `<li>${category}</li>`;
-        });
-        statusHtml += "</ul>";
+      if (differences.deleted_categories.length > 0) {
+        statusHtml += `
+          <div class="status-section">
+            <h4>已删除的类别（配置中仍存在）：</h4>
+            <ul>
+              ${differences.deleted_categories
+                .map(
+                  (category) => `
+                <li>
+                  ${category}
+                  <div class="action-buttons">
+                    <button onclick="restoreCategory('${category}')" class="restore-btn">恢复类别</button>
+                    <button onclick="removeFromConfig('${category}')" class="remove-btn">从配置中删除</button>
+                  </div>
+                </li>
+              `
+                )
+                .join("")}
+            </ul>
+          </div>
+        `;
       }
 
       if (!statusHtml) {
         statusHtml = "<p>配置与文件夹结构一致！</p>";
+      } else {
+        statusHtml += `
+          <div class="sync-actions">
+            <button onclick="syncConfig()" class="main-sync-btn">同步所有配置</button>
+          </div>
+        `;
       }
 
       statusDiv.innerHTML = statusHtml;
@@ -342,7 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("检查同步状态失败:", error);
       statusDiv.innerHTML = `
         <p style="color: red;">检查同步状态失败: ${error.message}</p>
-        <p>请点击"检查同步状态"按钮手动检查</p>
+        <button onclick="checkSyncStatus()" class="retry-btn">重试</button>
       `;
     }
   }
@@ -454,6 +494,116 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("同步配置失败: " + error.message);
     }
   }
+
+  // 恢复类别
+  async function restoreCategory(category) {
+    try {
+      const response = await fetch("/api/category/restore", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ category }),
+      });
+
+      if (!response.ok) throw new Error("恢复类别失败");
+
+      // 重新加载数据
+      await fetchEmojis();
+      await checkSyncStatus();
+    } catch (error) {
+      console.error("恢复类别失败:", error);
+      alert("恢复类别失败: " + error.message);
+    }
+  }
+
+  // 从配置中删除类别
+  async function removeFromConfig(category) {
+    if (!confirm(`确定要从配置中删除 "${category}" 类别吗？`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/category/remove_from_config", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ category }),
+      });
+
+      if (!response.ok) throw new Error("从配置中删除类别失败");
+
+      // 重新加载数据
+      await checkSyncStatus();
+    } catch (error) {
+      console.error("从配置中删除类别失败:", error);
+      alert("从配置中删除类别失败: " + error.message);
+    }
+  }
+
+  // 编辑类别
+  function editCategory(category) {
+    const nameDisplay = document.getElementById(`category-name-${category}`);
+    const descDisplay = document.getElementById(`category-desc-${category}`);
+    const editForm = document.getElementById(`category-edit-${category}`);
+
+    nameDisplay.parentElement.style.display = "none";
+    descDisplay.style.display = "none";
+    editForm.style.display = "block";
+  }
+
+  // 取消编辑
+  function cancelEdit(category) {
+    const nameDisplay = document.getElementById(`category-name-${category}`);
+    const descDisplay = document.getElementById(`category-desc-${category}`);
+    const editForm = document.getElementById(`category-edit-${category}`);
+
+    nameDisplay.parentElement.style.display = "flex";
+    descDisplay.style.display = "block";
+    editForm.style.display = "none";
+  }
+
+  // 保存类别修改
+  async function saveCategory(oldName) {
+    const editForm = document.getElementById(`category-edit-${oldName}`);
+    const newName = editForm.querySelector(".category-name-input").value.trim();
+    const newDesc = editForm.querySelector(".category-desc-input").value.trim();
+
+    try {
+      // 如果名称有变化，先重命名类别
+      if (oldName !== newName) {
+        const renameResponse = await fetch("/api/category/rename", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ old_name: oldName, new_name: newName }),
+        });
+        if (!renameResponse.ok) throw new Error("重命名类别失败");
+      }
+
+      // 更新描述
+      const descResponse = await fetch("/api/category/update_description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tag: newName, description: newDesc }),
+      });
+      if (!descResponse.ok) throw new Error("更新描述失败");
+
+      // 重新加载数据
+      await fetchEmojis();
+    } catch (error) {
+      console.error("保存类别修改失败:", error);
+      alert("保存类别修改失败: " + error.message);
+    }
+  }
+
+  // 确保这些函数是全局可访问的
+  window.restoreCategory = restoreCategory;
+  window.removeFromConfig = removeFromConfig;
+  window.syncConfig = syncConfig;
+  window.editCategory = editCategory;
+  window.cancelEdit = cancelEdit;
+  window.saveCategory = saveCategory;
 
   // 初始化加载数据
   fetchEmojis();

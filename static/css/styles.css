@@ -515,3 +515,130 @@ input[type="file"] {
 #sidebar-list a:hover {
   background-color: #f0f0f0;
 }
+
+.status-section {
+  margin: 15px 0;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.status-section h4 {
+  margin: 0 0 10px;
+  color: #495057;
+}
+
+.status-section ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.status-section li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+.sync-btn,
+.restore-btn,
+.remove-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sync-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.restore-btn {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.remove-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.main-sync-btn {
+  width: 100%;
+  margin-top: 15px;
+  padding: 8px;
+  background-color: #007bff;
+  color: white;
+}
+
+.retry-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.category-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.category-edit-form {
+  margin: 10px 0;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.category-edit-form input {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.edit-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.save-edit-btn,
+.cancel-edit-btn {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.save-edit-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.cancel-edit-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.edit-category-btn {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
