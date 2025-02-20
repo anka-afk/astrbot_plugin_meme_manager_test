@@ -105,17 +105,21 @@ class MemeSender(Star):
             # 获取插件文件夹名称
             plugin_dir = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
             
-            # 创建配置字典，包含 img_sync 实例
-            config = {
+            # 获取完整配置对象
+            config = self.context.get_config()
+            
+            # 创建配置字典，包含 img_sync 实例和配置对象
+            webui_config = {
                 "emotion_map": self.emotion_map,
                 "memes_path": self.meme_path,
                 "webui_port": self.config.get("webui_port", 5000),
                 "img_sync": self.img_sync,  # 传递 img_sync 实例
                 "plugin_dir": plugin_dir,  # 传递插件文件夹名称
+                "config": config,  # 传递完整配置对象
             }
 
             # 启动服务器
-            secret_key, process = start_server(config)
+            secret_key, process = start_server(webui_config)
             self.server_process = process
 
             # 获取公网 IP

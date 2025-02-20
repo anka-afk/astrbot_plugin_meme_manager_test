@@ -106,36 +106,23 @@ def get_emotions():
         return jsonify({"message": f"无法读取 emotion_map: {str(e)}"}), 500
 
 
-# 获取配置文件路径
-def get_config_path():
-    """获取配置文件路径"""
+def update_emotion_map(new_map):
+    """更新配置中的 emotion_map"""
     try:
-        # 从 Flask 配置中获取插件文件夹名称
-        plugin_dir = current_app.config.get("PLUGIN_CONFIG", {}).get("plugin_dir")
-        if not plugin_dir:
-            raise ValueError("未找到插件文件夹名称")
-            
-        # 获取当前文件所在目录
-        current_dir = Path(__file__).parent.parent.parent
-        # 配置文件路径
-        return current_dir.parent.parent / "config" / f"{plugin_dir}_config.json"
+        # 获取 Flask 应用配置中的完整配置对象
+        config = current_app.config.get("PLUGIN_CONFIG", {}).get("config")
+        if not config:
+            raise ValueError("未找到配置对象")
+        
+        # 更新 emotion_map
+        config["emotion_map"] = new_map
+        # 保存配置
+        config.save_config()
+        
+        return True
     except Exception as e:
-        current_app.logger.error(f"获取配置文件路径失败: {str(e)}")
+        current_app.logger.error(f"更新配置失败: {str(e)}")
         raise
-
-# 读取配置文件
-def read_config():
-    config_path = get_config_path()
-    if not config_path.exists():
-        return {}
-    with open(config_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-# 保存配置文件
-def save_config(config):
-    config_path = get_config_path()
-    with open(config_path, 'w', encoding='utf-8') as f:
-        json.dump(config, f, ensure_ascii=False, indent=2)
 
 @api.route("/category/delete", methods=["POST"])
 def delete_category():
@@ -155,20 +142,21 @@ def delete_category():
             current_app.logger.error(f"删除文件夹失败: {str(e)}")
             return jsonify({"message": f"删除文件夹失败: {str(e)}"}), 500
 
-        # 更新配置文件
+        # 更新配置
         try:
-            config = read_config()
-            emotion_map = config.get("emotion_map", {})
+            config = current_app.config.get("PLUGIN_CONFIG", {}).get("config")
+            emotion_map = config.get("emotion_map", {}).copy()
             # 找到并删除对应的中文-英文映射
             for chinese, english in list(emotion_map.items()):
                 if english == category:
                     del emotion_map[chinese]
+            # 更新配置
             config["emotion_map"] = emotion_map
-            save_config(config)
+            config.save_config()
         except Exception as e:
-            current_app.logger.error(f"更新配置文件失败: {str(e)}")
+            current_app.logger.error(f"更新配置失败: {str(e)}")
             return jsonify({
-                "message": f"删除文件夹成功，但更新配置文件失败: {str(e)}",
+                "message": f"删除文件夹成功，但更新配置失败: {str(e)}",
                 "detail": traceback.format_exc()
             }), 500
 
@@ -195,12 +183,12 @@ def add_category():
         if not os.path.exists(category_path):
             os.makedirs(category_path)
 
-        # 更新配置文件
-        config = read_config()
-        emotion_map = config.get("emotion_map", {})
+        # 更新配置
+        config = current_app.config.get("PLUGIN_CONFIG", {}).get("config")
+        emotion_map = config.get("emotion_map", {}).copy()
         emotion_map[chinese] = english
         config["emotion_map"] = emotion_map
-        save_config(config)
+        config.save_config()
 
         return jsonify({"message": "Category added successfully"}), 201
     except Exception as e:
@@ -216,12 +204,12 @@ def update_category_mapping():
         if not english or not chinese:
             return jsonify({"message": "English and Chinese names are required"}), 400
 
-        # 更新配置文件
-        config = read_config()
-        emotion_map = config.get("emotion_map", {})
+        # 更新配置
+        config = current_app.config.get("PLUGIN_CONFIG", {}).get("config")
+        emotion_map = config.get("emotion_map", {}).copy()
         emotion_map[chinese] = english
         config["emotion_map"] = emotion_map
-        save_config(config)
+        config.save_config()
 
         return jsonify({"message": "Category mapping updated successfully"}), 200
     except Exception as e:
