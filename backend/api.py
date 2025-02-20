@@ -101,7 +101,8 @@ def get_emotions():
     """获取标签描述映射"""
     try:
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        tag_descriptions = plugin_config.get("tag_descriptions", {})
+        bot_config = plugin_config.get("bot_config", {})
+        tag_descriptions = bot_config.get("tag_descriptions", {})
         return jsonify(tag_descriptions)
     except Exception as e:
         return jsonify({"message": f"无法读取标签描述: {str(e)}"}), 500
@@ -403,9 +404,6 @@ def update_category_description():
         tag_descriptions[tag] = description
         bot_config["tag_descriptions"] = tag_descriptions
         bot_config.save_config()
-
-        # 同时更新 Flask 应用配置
-        plugin_config["tag_descriptions"] = tag_descriptions
 
         return jsonify({"message": "Category description updated successfully"}), 200
     except Exception as e:

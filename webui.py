@@ -86,13 +86,10 @@ def start_server(config=None):
     if config is not None:
         # 确保配置中包含必要的信息
         if hasattr(config, 'get'):
-            
             app.config["PLUGIN_CONFIG"] = {
-                "emotion_map": config.get("emotion_map", {}),
-                "img_sync": config.get("img_sync"),
                 "memes_path": config.get("memes_path", "memes"),
-                "plugin_dir": config.get("plugin_dir"),
-                "bot_config": config.get("config"),  # 使用 bot_config 作为键名
+                "img_sync": config.get("img_sync"),
+                "bot_config": config.get("bot_config"),  # 完整的配置对象
             }
         else:
             print("警告: 配置格式不正确")
@@ -112,7 +109,7 @@ def start_server(config=None):
     app.config["MEMES_DIR"] = MEMES_DIR
 
     # 启动服务器
-    port = config.get("webui_port", 5000) if config else 5000
+    port = config.get("bot_config", {}).get("webui_port", 5000) if config else 5000
     server_process = multiprocessing.Process(target=run_server, args=(port,))
     server_process.start()
     return SERVER_LOGIN_KEY, server_process

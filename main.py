@@ -108,14 +108,11 @@ class MemeSender(Star):
             # 获取完整配置对象
             config = self.context.get_config()
             
-            # 创建配置字典，包含 img_sync 实例和配置对象
+            # 创建精简的配置字典
             webui_config = {
-                "emotion_map": self.tag_descriptions,
                 "memes_path": self.meme_path,
-                "webui_port": self.config.get("webui_port", 5000),
                 "img_sync": self.img_sync,  # 传递 img_sync 实例
-                "plugin_dir": plugin_dir,  # 传递插件文件夹名称
-                "config": config,  # 传递完整配置对象
+                "bot_config": config,  # 传递完整配置对象
             }
 
             # 启动服务器
