@@ -9,10 +9,7 @@ from .models import (
 )
 import os
 import shutil
-from ..image_host.stardots_host import StarDotsImageHost
 
-# 创建图床对象，这里可以动态选择使用哪个图床
-image_host = StarDotsImageHost()  # 选择 StarDots 图床实现
 
 api = Blueprint("api", __name__)
 
@@ -170,36 +167,3 @@ def delete_category():
     return jsonify({"message": "Category deleted successfully"}), 200
 
 
-# --- 图床相关 API ---
-
-
-# 同步表情包目录到图床
-@api.route("/sync_memes", methods=["POST"])
-def sync_memes():
-    memes_dir = get_base_dir()
-    try:
-        result = image_host.sync_memes_to_host(memes_dir)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"message": f"同步表情包失败: {str(e)}"}), 500
-
-
-# 上传单个文件到图床
-@api.route("/upload", methods=["POST"])
-def upload_to_host():
-    category = request.form.get("category")
-    if not category:
-        return jsonify({"message": "Category is required"}), 400
-
-    if "file" not in request.files:
-        return jsonify({"message": "File is required"}), 400
-
-    file = request.files["file"]
-    temp_path = f"./temp_upload/{file.filename}"
-    file.save(temp_path)
-
-    try:
-        upload_resp = image_host.upload_file(category, temp_path)
-        return jsonify(upload_resp)
-    except Exception as e:
-        return jsonify({"message": f"上传文件到图床失败: {str(e)}"}), 500

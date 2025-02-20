@@ -7,6 +7,6 @@ help: |
   3. /上传表情包 [类别] - 添加新表情到指定分类
   4. /启动表情包管理服务器
   5. /关闭表情包管理服务器
-version: v2.9
+version: v3.0
 author: anka
 repo: https://github.com/anka-afk/astrbot_plugin_meme_manager_test
