@@ -428,3 +428,90 @@ input[type="file"] {
 .edit-category-container button:hover {
   background-color: #1976d2;
 }
+
+/* 添加或修改以下样式 */
+.left-panel {
+  width: 250px;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sync-panel {
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.sync-panel h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+#sync-status {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.sync-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sync-buttons button {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.sync-buttons button:hover {
+  background-color: #f0f0f0;
+}
+
+#sidebar {
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#sidebar h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+#sidebar-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#sidebar-list li {
+  margin-bottom: 10px;
+}
+
+#sidebar-list a {
+  text-decoration: none;
+  color: #333;
+  display: block;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+#sidebar-list a:hover {
+  background-color: #f0f0f0;
+}
