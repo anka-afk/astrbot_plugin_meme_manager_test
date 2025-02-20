@@ -24,7 +24,7 @@ from .img_host.img_sync import ImageSync
 
 
 @register(
-    "meme_manager", "anka", "anka - 表情包管理器 - 支持表情包发送及表情包上传", "2.0"
+    "meme_manager_test", "anka", "anka - 表情包管理器 - 支持表情包发送及表情包上传", "2.0"
 )
 class MemeSender(Star):
     def __init__(self, context: Context, config: dict = None):
