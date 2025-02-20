@@ -79,6 +79,10 @@ def start_server(config=None):
 
     app.secret_key = os.urandom(16)
 
+    # 设置日志级别为 WARNING，这样会禁止 INFO 和 DEBUG 级别的输出
+    import logging
+    logging.getLogger().setLevel(logging.WARNING)
+
     if config is not None:
         # 确保配置中包含必要的信息
         if hasattr(config, 'get'):
