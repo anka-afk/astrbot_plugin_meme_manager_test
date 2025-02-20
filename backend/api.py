@@ -144,15 +144,26 @@ def delete_category():
 
         # 更新配置
         try:
-            config = current_app.config.get("PLUGIN_CONFIG", {}).get("config")
-            emotion_map = config.get("emotion_map", {}).copy()
+            # 获取配置对象
+            bot_config = current_app.config.get("PLUGIN_CONFIG", {}).get("bot_config")
+            if not bot_config:
+                raise ValueError("未找到配置对象")
+
+            # 更新 emotion_map
+            emotion_map = bot_config.get("emotion_map", {}).copy()
             # 找到并删除对应的中文-英文映射
             for chinese, english in list(emotion_map.items()):
                 if english == category:
                     del emotion_map[chinese]
+            
             # 更新配置
-            config["emotion_map"] = emotion_map
-            config.save_config()
+            bot_config["emotion_map"] = emotion_map
+            bot_config.save_config()  # 保存配置
+            
+            # 同时更新 Flask 应用配置中的 emotion_map
+            plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+            plugin_config["emotion_map"] = emotion_map
+
         except Exception as e:
             current_app.logger.error(f"更新配置失败: {str(e)}")
             return jsonify({
@@ -184,11 +195,18 @@ def add_category():
             os.makedirs(category_path)
 
         # 更新配置
-        config = current_app.config.get("PLUGIN_CONFIG", {}).get("config")
-        emotion_map = config.get("emotion_map", {}).copy()
+        bot_config = current_app.config.get("PLUGIN_CONFIG", {}).get("bot_config")
+        if not bot_config:
+            raise ValueError("未找到配置对象")
+
+        emotion_map = bot_config.get("emotion_map", {}).copy()
         emotion_map[chinese] = english
-        config["emotion_map"] = emotion_map
-        config.save_config()
+        bot_config["emotion_map"] = emotion_map
+        bot_config.save_config()
+
+        # 同时更新 Flask 应用配置
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        plugin_config["emotion_map"] = emotion_map
 
         return jsonify({"message": "Category added successfully"}), 201
     except Exception as e:
