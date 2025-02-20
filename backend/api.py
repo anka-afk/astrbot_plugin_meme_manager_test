@@ -133,6 +133,9 @@ def delete_category():
         if not category:
             return jsonify({"message": "Category is required"}), 400
 
+        print("Debug - 当前 Flask 配置:", current_app.config)  # 调试输出
+        print("Debug - PLUGIN_CONFIG:", current_app.config.get("PLUGIN_CONFIG"))  # 调试输出
+        
         # 删除文件夹
         category_path = os.path.join(current_app.config["MEMES_DIR"], category)
         try:
@@ -145,7 +148,11 @@ def delete_category():
         # 更新配置
         try:
             # 获取配置对象
-            bot_config = current_app.config.get("PLUGIN_CONFIG", {}).get("bot_config")
+            plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+            print("Debug - plugin_config:", plugin_config)  # 调试输出
+            bot_config = plugin_config.get("bot_config")
+            print("Debug - bot_config:", bot_config)  # 调试输出
+            
             if not bot_config:
                 raise ValueError("未找到配置对象")
 
@@ -161,7 +168,6 @@ def delete_category():
             bot_config.save_config()  # 保存配置
             
             # 同时更新 Flask 应用配置中的 emotion_map
-            plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
             plugin_config["emotion_map"] = emotion_map
 
         except Exception as e:

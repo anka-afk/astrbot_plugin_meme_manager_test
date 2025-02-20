@@ -348,9 +348,6 @@ class StarDotsProvider(ImageHostInterface):
 
                             # 处理图片列表
                             for img in images:
-                                print(f"\n=== 远程文件原始信息 ===")
-                                print(f"name: {img['name']}")
-                                print(f"url: {img['url']}")
 
                                 # 从文件名中提取分类信息
                                 filename = img["name"]
@@ -364,7 +361,6 @@ class StarDotsProvider(ImageHostInterface):
                                     category = "default"
                                     name = filename
 
-                                print(f"解析后 - 分类: {category}, 文件名: {name}")
 
                                 all_images.append(
                                     {

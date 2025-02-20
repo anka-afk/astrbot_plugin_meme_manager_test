@@ -107,6 +107,7 @@ class MemeSender(Star):
             
             # 获取完整配置对象
             config = self.context.get_config()
+            print("Debug - 获取到的配置对象:", config)  # 调试输出
             
             # 创建配置字典，包含 img_sync 实例和配置对象
             webui_config = {
@@ -117,6 +118,7 @@ class MemeSender(Star):
                 "plugin_dir": plugin_dir,  # 传递插件文件夹名称
                 "config": config,  # 传递完整配置对象
             }
+            print("Debug - 创建的 webui_config:", webui_config)  # 调试输出
 
             # 启动服务器
             secret_key, process = start_server(webui_config)
