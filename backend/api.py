@@ -10,6 +10,7 @@ from .models import (
 import os
 import shutil
 import asyncio
+from functools import partial
 
 
 api = Blueprint("api", __name__)
@@ -181,10 +182,11 @@ def get_sync_status():
             return jsonify({
                 "error": "配置错误",
                 "detail": "图床服务未配置",
-                "config": str(plugin_config)  # 输出配置信息以便调试
+                "config": str(plugin_config)
             }), 400
             
         try:
+            # 添加超时处理
             status = img_sync.check_status()
             return jsonify(status)
         except Exception as e:
