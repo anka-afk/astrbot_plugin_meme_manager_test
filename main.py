@@ -55,8 +55,8 @@ class MemeSender(Star):
                 "baka": "表达责备的场景",
                 "morning": "表达早安问候的场景",
                 "sleep": "表达疲惫或休息的场景",
-                "sigh": "表达叹息的场景",
-            },
+                "sigh": "表达叹息的场景"
+            }
         )
         self.image_host = self.config.get("image_host", "stardots")
         self.image_host_key = self.config.get("image_host_key", "")
@@ -498,3 +498,29 @@ class MemeSender(Star):
             await self.send_random_emoji(event, message)
             return True
         return False
+
+    async def send_random_emoji(self, event: AstrMessageEvent, category: str):
+        """发送随机表情包"""
+        try:
+            # 直接使用英文分类名
+            emoji_dir = os.path.join(self.meme_path, category)
+            if not os.path.exists(emoji_dir):
+                self.logger.error(f"表情目录不存在: {emoji_dir}")
+                return
+
+            emoji_files = [f for f in os.listdir(emoji_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
+            if not emoji_files:
+                self.logger.warning(f"目录 {category} 中没有表情包")
+                return
+
+            random_emoji = random.choice(emoji_files)
+            emoji_path = os.path.join(emoji_dir, random_emoji)
+            
+            # 发送图片
+            with open(emoji_path, 'rb') as f:
+                image_data = f.read()
+            yield event.image_result(image_data)
+
+        except Exception as e:
+            self.logger.error(f"发送表情包失败: {str(e)}")
+            yield event.plain_result(f"发送表情包失败: {str(e)}")
