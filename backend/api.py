@@ -176,12 +176,30 @@ def get_sync_status():
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
         img_sync = plugin_config.get("img_sync")
         if not img_sync:
-            return jsonify({"message": "图床服务未配置"}), 400
+            return jsonify({
+                "error": "配置错误",
+                "detail": "图床服务未配置",
+                "config": str(plugin_config)  # 输出配置信息以便调试
+            }), 400
             
-        status = img_sync.check_status()
-        return jsonify(status)
+        try:
+            status = img_sync.check_status()
+            return jsonify(status)
+        except Exception as e:
+            import traceback
+            return jsonify({
+                "error": "同步状态检查失败",
+                "detail": str(e),
+                "traceback": traceback.format_exc()
+            }), 500
+            
     except Exception as e:
-        return jsonify({"message": str(e)}), 500
+        import traceback
+        return jsonify({
+            "error": "服务器错误",
+            "detail": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
 
 @api.route("/sync/upload", methods=["POST"])
 def sync_to_remote():

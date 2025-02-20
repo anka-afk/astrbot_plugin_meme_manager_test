@@ -282,7 +282,16 @@ document.addEventListener("DOMContentLoaded", () => {
   async function checkSyncStatus() {
     try {
       const response = await fetch("/api/sync/status");
-      if (!response.ok) throw new Error("获取同步状态失败");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          `获取同步状态失败 (${response.status}): ${
+            errorData.error
+          }\n详细信息: ${errorData.detail}${
+            errorData.traceback ? "\n堆栈: " + errorData.traceback : ""
+          }`
+        );
+      }
       const data = await response.json();
 
       // 更新UI显示
@@ -294,6 +303,13 @@ document.addEventListener("DOMContentLoaded", () => {
       return data;
     } catch (error) {
       console.error("检查同步状态失败:", error);
+      // 在控制台显示完整错误信息
+      if (error.message) {
+        console.error("错误详情:", error.message);
+      }
+      if (error.stack) {
+        console.error("JavaScript堆栈:", error.stack);
+      }
       alert("检查同步状态失败: " + error.message);
     }
   }
