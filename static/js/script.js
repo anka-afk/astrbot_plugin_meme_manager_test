@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 添加图片加载错误处理函数
   function handleImageError(emojiItem) {
-    const maxRetries = 2;
+    const maxRetries = 10;
     let retryCount = parseInt(emojiItem.dataset.retryCount || "0");
 
     if (retryCount < maxRetries) {
@@ -328,7 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 添加同步相关的函数
   async function checkSyncStatus() {
-    const maxRetries = 3; // 最大重试次数
+    const maxRetries = 10; // 最大重试次数
     const retryDelay = 1000; // 重试延迟（毫秒）
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
