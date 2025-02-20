@@ -41,9 +41,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return category;
   }
 
-  // 添加图片加载错误处理函数
+  // 修改图片加载错误处理函数
   function handleImageError(emojiItem) {
-    const maxRetries = 10;
+    const maxRetries = 10; // 增加最大重试次数
+    const baseDelay = 2000; // 基础延迟时间（毫秒）
     let retryCount = parseInt(emojiItem.dataset.retryCount || "0");
 
     if (retryCount < maxRetries) {
@@ -51,12 +52,17 @@ document.addEventListener("DOMContentLoaded", () => {
       retryCount++;
       emojiItem.dataset.retryCount = retryCount;
 
+      // 使用指数退避策略计算延迟时间
+      const delay = Math.min(baseDelay * Math.pow(1.5, retryCount - 1), 10000);
+
       // 延迟后重试加载
       setTimeout(() => {
-        console.log(`重试加载图片 (${retryCount}/${maxRetries})`);
+        console.log(
+          `重试加载图片 (${retryCount}/${maxRetries}), 延迟: ${delay}ms`
+        );
         const bgUrl = emojiItem.getAttribute("data-bg");
         emojiItem.style.backgroundImage = `url('${bgUrl}?retry=${retryCount}')`;
-      }, 1000 * retryCount); // 递增延迟时间
+      }, delay);
     } else {
       // 达到最大重试次数，显示错误状态
       emojiItem.classList.add("image-load-error");
@@ -112,11 +118,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const img = new Image();
         img.style.display = "none"; // 先隐藏图片
 
-        // 设置加载超时
+        // 设置加载超时（增加到15秒）
         const timeoutId = setTimeout(() => {
           img.src = ""; // 取消加载
           handleImageError(emojiItem);
-        }, 5000); // 5秒超时
+        }, 15000);
 
         img.onload = () => {
           clearTimeout(timeoutId);

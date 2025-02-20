@@ -13,6 +13,7 @@ import asyncio
 from functools import partial
 import json
 from pathlib import Path
+import traceback
 
 
 api = Blueprint("api", __name__)
@@ -147,11 +148,15 @@ def delete_category():
 
         # 删除文件夹
         category_path = os.path.join(current_app.config["MEMES_DIR"], category)
-        if os.path.exists(category_path):
-            shutil.rmtree(category_path)
-
         try:
-            # 更新配置文件
+            if os.path.exists(category_path):
+                shutil.rmtree(category_path)
+        except Exception as e:
+            current_app.logger.error(f"删除文件夹失败: {str(e)}")
+            return jsonify({"message": f"删除文件夹失败: {str(e)}"}), 500
+
+        # 更新配置文件
+        try:
             config = read_config()
             emotion_map = config.get("emotion_map", {})
             # 找到并删除对应的中文-英文映射
@@ -162,12 +167,18 @@ def delete_category():
             save_config(config)
         except Exception as e:
             current_app.logger.error(f"更新配置文件失败: {str(e)}")
-            return jsonify({"message": f"删除文件夹成功，但更新配置文件失败: {str(e)}"}), 500
+            return jsonify({
+                "message": f"删除文件夹成功，但更新配置文件失败: {str(e)}",
+                "detail": traceback.format_exc()
+            }), 500
 
         return jsonify({"message": "Category deleted successfully"}), 200
     except Exception as e:
         current_app.logger.error(f"删除分类失败: {str(e)}")
-        return jsonify({"message": f"Failed to delete category: {str(e)}"}), 500
+        return jsonify({
+            "message": f"删除分类失败: {str(e)}",
+            "detail": traceback.format_exc()
+        }), 500
 
 @api.route("/category/add", methods=["POST"])
 def add_category():
