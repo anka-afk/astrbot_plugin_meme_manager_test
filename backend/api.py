@@ -103,17 +103,19 @@ def get_emotions():
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
         current_app.logger.debug(f"plugin_config: {plugin_config}")
         
-        bot_config = plugin_config.get("bot_config")
-        current_app.logger.debug(f"bot_config: {bot_config}")
+        # 获取 emotion_map
+        emotion_map = plugin_config.get("emotion_map", {})
+        current_app.logger.debug(f"emotion_map: {emotion_map}")
         
-        if not bot_config:
-            current_app.logger.debug("未找到 bot_config，返回空字典")
-            return jsonify({})
+        # 构建标签描述映射
+        tag_descriptions = {}
+        for chinese, english in emotion_map.items():
+            # 去掉中文名称中的"未命名_"前缀
+            clean_chinese = chinese.replace("未命名_", "")
+            # 构建描述
+            tag_descriptions[english] = f"表达{clean_chinese}的场景"
             
-        # 直接从 bot_config 获取
-        tag_descriptions = bot_config.get("tag_descriptions", {})
-        current_app.logger.debug(f"从 bot_config 获取的 tag_descriptions: {tag_descriptions}")
-            
+        current_app.logger.debug(f"生成的 tag_descriptions: {tag_descriptions}")
         return jsonify(tag_descriptions)
     except Exception as e:
         current_app.logger.error(f"获取标签描述失败: {str(e)}")
@@ -407,17 +409,24 @@ def update_category_description():
         if not tag or not description:
             return jsonify({"message": "Tag and description are required"}), 400
 
-        # 更新配置
+        # 获取配置
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        bot_config = plugin_config.get("bot_config")
-        if not bot_config:
-            raise ValueError("未找到配置对象")
-
-        tag_descriptions = bot_config.get("tag_descriptions", {}).copy()
-        tag_descriptions[tag] = description
-        bot_config["tag_descriptions"] = tag_descriptions
-        bot_config.save_config()
-
+        emotion_map = plugin_config.get("emotion_map", {})
+        
+        # 找到对应的中文键
+        chinese_key = None
+        for key, value in emotion_map.items():
+            if value == tag:
+                chinese_key = key
+                break
+                
+        if not chinese_key:
+            return jsonify({"message": "Tag not found in emotion_map"}), 404
+            
+        # 更新描述
+        emotion_map[chinese_key] = tag
+        plugin_config["emotion_map"] = emotion_map
+        
         return jsonify({"message": "Category description updated successfully"}), 200
     except Exception as e:
         return jsonify({"message": f"Failed to update category description: {str(e)}"}), 500

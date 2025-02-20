@@ -46,260 +46,81 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 修改图片加载错误处理函数
   function handleImageError(emojiItem) {
-    const maxRetries = 10; // 增加最大重试次数
-    const baseDelay = 2000; // 基础延迟时间（毫秒）
-    let retryCount = parseInt(emojiItem.dataset.retryCount || "0");
-
-    if (retryCount < maxRetries) {
-      // 增加重试计数
-      retryCount++;
-      emojiItem.dataset.retryCount = retryCount;
-
-      // 使用指数退避策略计算延迟时间
-      const delay = Math.min(baseDelay * Math.pow(1.5, retryCount - 1), 10000);
-
-      // 延迟后重试加载
-      setTimeout(() => {
-        console.log(
-          `重试加载图片 (${retryCount}/${maxRetries}), 延迟: ${delay}ms`
-        );
-        const bgUrl = emojiItem.getAttribute("data-bg");
-        emojiItem.style.backgroundImage = `url('${bgUrl}?retry=${retryCount}')`;
-      }, delay);
-    } else {
-      // 达到最大重试次数，显示错误状态
-      emojiItem.classList.add("image-load-error");
-      emojiItem.style.backgroundImage = "none";
-      emojiItem.innerHTML += '<div class="error-overlay">加载失败</div>';
-    }
+    const img = emojiItem.querySelector("img");
+    const errorDiv = document.createElement("div");
+    errorDiv.className = "error-placeholder";
+    errorDiv.textContent = "图片加载失败";
+    img.replaceWith(errorDiv);
   }
 
   // 根据数据生成 DOM 节点，展示每个分类及其表情包，并添加上传块
-  function displayCategories(data, tagDescriptions) {
-    if (!categoriesContainer) return;
-    categoriesContainer.innerHTML = "";
+  function displayCategories(emojiData, tagDescriptions) {
+    const container = document.getElementById("emoji-categories");
+    container.innerHTML = "";
 
-    for (const category in data) {
+    Object.entries(emojiData).forEach(([category, emojis]) => {
       const categoryDiv = document.createElement("div");
-      categoryDiv.classList.add("category");
-      categoryDiv.id = "category-" + category;
+      categoryDiv.className = "category";
+      categoryDiv.id = `category-${category}`;
 
-      // 标题和按钮容器
-      const headerDiv = document.createElement("div");
-      headerDiv.style.display = "flex";
-      headerDiv.style.justifyContent = "space-between";
-      headerDiv.style.alignItems = "flex-start";
-      headerDiv.style.width = "100%";
-
-      // 左侧：标题、描述和编辑按钮
-      const leftDiv = document.createElement("div");
-      leftDiv.style.display = "flex";
-      leftDiv.style.flexDirection = "column";
-      leftDiv.style.gap = "10px";
-
-      // 标题行
-      const titleRow = document.createElement("div");
-      titleRow.style.display = "flex";
-      titleRow.style.alignItems = "center";
-      titleRow.style.gap = "10px";
-
-      // 分类标题
-      const categoryTitle = document.createElement("h3");
-      categoryTitle.style.margin = "0";
-      categoryTitle.textContent = category;
-
-      // 编辑按钮
-      const editButton = document.createElement("button");
-      editButton.classList.add("edit-category-btn");
-      editButton.textContent = "编辑描述";
-
-      titleRow.appendChild(categoryTitle);
-      titleRow.appendChild(editButton);
-
-      // 描述文本
-      const descriptionText = document.createElement("p");
-      descriptionText.classList.add("category-description");
-      descriptionText.style.margin = "0";
-      descriptionText.style.color = "#666";
-      descriptionText.style.fontSize = "0.9em";
       const description =
         tagDescriptions[category] || `未添加描述的${category}类别`;
-      descriptionText.textContent = description;
+      const titleDiv = document.createElement("div");
+      titleDiv.className = "category-title";
+      titleDiv.innerHTML = `
+        <h2>${category}</h2>
+        <p class="description">${description}</p>
+        <button class="edit-description-btn" data-category="${category}">
+          编辑描述
+        </button>
+      `;
+      categoryDiv.appendChild(titleDiv);
 
-      leftDiv.appendChild(titleRow);
-      leftDiv.appendChild(descriptionText);
+      const emojiGrid = document.createElement("div");
+      emojiGrid.className = "emoji-grid";
 
-      editButton.onclick = () => {
-        const existingEdit = categoryDiv.querySelector(
-          ".edit-category-container"
-        );
-        if (existingEdit) {
-          existingEdit.remove();
-          return;
-        }
+      emojis.forEach((emoji) => {
+        const emojiItem = document.createElement("div");
+        emojiItem.className = "emoji-item";
 
-        const editContainer = document.createElement("div");
-        editContainer.classList.add("edit-category-container");
+        // 创建图片元素但先不设置 src
+        const img = document.createElement("img");
+        img.alt = emoji;
+        img.dataset.src = `/memes/${category}/${emoji}`; // 使用 data-src 存储实际路径
+        img.loading = "lazy"; // 使用浏览器原生懒加载
 
-        const input = document.createElement("input");
-        input.type = "text";
-        input.value = description;
-        input.placeholder = "请输入类别描述";
+        // 添加错误处理
+        img.onerror = () => handleImageError(emojiItem);
 
-        const saveBtn = document.createElement("button");
-        saveBtn.textContent = "保存";
-        saveBtn.onclick = async () => {
-          const newDescription = input.value.trim();
-          if (newDescription) {
-            try {
-              const response = await fetch("/api/category/update_description", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  tag: category,
-                  description: newDescription,
-                }),
-              });
-              if (!response.ok) {
-                throw new Error("更新描述失败");
-              }
-              // 重新加载数据
-              fetchEmojis();
-            } catch (error) {
-              console.error("更新描述失败:", error);
-              alert("更新描述失败: " + error.message);
+        emojiItem.appendChild(img);
+        emojiGrid.appendChild(emojiItem);
+      });
+
+      categoryDiv.appendChild(emojiGrid);
+      container.appendChild(categoryDiv);
+
+      // 使用 Intersection Observer 实现懒加载
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              img.src = img.dataset.src; // 当图片进入视口时才设置 src
+              observer.unobserve(img); // 加载后取消观察
             }
-          }
-        };
-
-        editContainer.appendChild(input);
-        editContainer.appendChild(saveBtn);
-        leftDiv.appendChild(editContainer);
-      };
-
-      // 右侧：删除按钮
-      const deleteCategoryBtn = document.createElement("button");
-      deleteCategoryBtn.classList.add("delete-category-btn");
-      deleteCategoryBtn.textContent = "删除分类";
-      deleteCategoryBtn.addEventListener("click", () =>
-        deleteCategory(category)
+          });
+        },
+        {
+          rootMargin: "50px", // 提前 50px 开始加载
+        }
       );
 
-      headerDiv.appendChild(leftDiv);
-      headerDiv.appendChild(deleteCategoryBtn);
-      categoryDiv.appendChild(headerDiv);
-
-      // 创建表情列表容器
-      const emojiListDiv = document.createElement("div");
-      emojiListDiv.classList.add("emoji-list");
-
-      // 遍历已有表情包
-      data[category].forEach((emoji) => {
-        const emojiItem = document.createElement("div");
-        emojiItem.classList.add("emoji-item");
-
-        // 创建实际的图片元素
-        const img = new Image();
-        img.style.display = "none"; // 先隐藏图片
-
-        // 设置加载超时（增加到15秒）
-        const timeoutId = setTimeout(() => {
-          img.src = ""; // 取消加载
-          handleImageError(emojiItem);
-        }, 15000);
-
-        img.onload = () => {
-          clearTimeout(timeoutId);
-          emojiItem.style.backgroundImage = `url('${img.src}')`;
-          img.remove(); // 移除临时图片元素
-        };
-
-        img.onerror = () => {
-          clearTimeout(timeoutId);
-          handleImageError(emojiItem);
-          img.remove(); // 移除临时图片元素
-        };
-
-        const imgUrl = `/memes/${category}/${emoji}`;
-        emojiItem.setAttribute("data-bg", imgUrl);
-        img.src = imgUrl;
-        emojiItem.appendChild(img);
-
-        // 删除按钮（右上角）
-        const deleteBtn = document.createElement("button");
-        deleteBtn.classList.add("delete-btn");
-        deleteBtn.textContent = "×";
-        deleteBtn.addEventListener("click", () => deleteEmoji(category, emoji));
-        emojiItem.appendChild(deleteBtn);
-
-        emojiListDiv.appendChild(emojiItem);
-      });
-
-      // 上传块：拖拽或点击上传新的表情包
-      const uploadBlock = document.createElement("div");
-      uploadBlock.classList.add("upload-emoji");
-      uploadBlock.textContent = "拖拽或点击上传";
-
-      // 隐藏的文件输入
-      const fileInput = document.createElement("input");
-      fileInput.type = "file";
-      fileInput.accept = "image/*";
-      fileInput.style.display = "none";
-      uploadBlock.appendChild(fileInput);
-
-      // 点击上传块打开文件选择对话框
-      uploadBlock.addEventListener("click", () => {
-        fileInput.click();
-      });
-      // 文件选择后上传
-      fileInput.addEventListener("change", () => {
-        if (fileInput.files && fileInput.files[0]) {
-          uploadEmoji(category, fileInput.files[0]);
-        }
-      });
-      // 拖拽事件
-      uploadBlock.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        uploadBlock.classList.add("dragover");
-      });
-      uploadBlock.addEventListener("dragleave", (e) => {
-        e.preventDefault();
-        uploadBlock.classList.remove("dragover");
-      });
-      uploadBlock.addEventListener("drop", (e) => {
-        e.preventDefault();
-        uploadBlock.classList.remove("dragover");
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-          uploadEmoji(category, e.dataTransfer.files[0]);
-        }
-      });
-
-      emojiListDiv.appendChild(uploadBlock);
-      categoryDiv.appendChild(emojiListDiv);
-      categoriesContainer.appendChild(categoryDiv);
-    }
-
-    // 懒加载背景图片
-    const lazyBackgrounds = document.querySelectorAll(".emoji-item");
-
-    const observer = new IntersectionObserver(
-      (entries, observer) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const emojiItem = entry.target;
-            const bgUrl = emojiItem.getAttribute("data-bg");
-            emojiItem.style.backgroundImage = `url('${bgUrl}')`; // 加载背景图片
-            emojiItem.removeAttribute("data-bg"); // 移除临时属性
-            observer.unobserve(emojiItem); // 停止观察
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    lazyBackgrounds.forEach((item) => {
-      observer.observe(item); // 观察每个表情包
+      // 观察所有图片
+      emojiGrid.querySelectorAll("img").forEach((img) => observer.observe(img));
     });
+
+    // 添加编辑描述的事件监听器
+    setupEditDescriptionHandlers();
   }
 
   // 更新侧边栏目录，根据分类数据生成跳转链接
