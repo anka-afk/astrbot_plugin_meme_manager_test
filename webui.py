@@ -93,9 +93,23 @@ def start_server(config=None):
             app.config["PLUGIN_CONFIG"] = {
                 "memes_path": config.get("memes_path", "memes"),
                 "img_sync": config.get("img_sync"),
-                "bot_config": config.get("bot_config"),  # 完整的配置对象
+                "config": config,  # 完整的配置对象
             }
             print("Debug - 设置的 PLUGIN_CONFIG:", app.config["PLUGIN_CONFIG"])
+            
+            # 设置表情包目录
+            app.config["MEMES_DIR"] = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                app.config["PLUGIN_CONFIG"]["memes_path"]
+            )
+            
+            # 启动时同步配置
+            from .backend.api import sync_config
+            with app.app_context():
+                try:
+                    sync_config()
+                except Exception as e:
+                    print(f"启动时同步配置失败: {e}")
         else:
             print("警告: 配置格式不正确")
             app.config["PLUGIN_CONFIG"] = config
@@ -131,3 +145,37 @@ def shutdown_server(server_process):
             server_process.terminate()
     except Exception as e:
         print("关闭服务器时出错:", e)
+
+
+def create_app(config=None):
+    app = Flask(__name__)
+    
+    # 确保配置中包含必要的信息
+    if hasattr(config, 'get'):
+        app.config["PLUGIN_CONFIG"] = {
+            "memes_path": config.get("memes_path", "memes"),
+            "img_sync": config.get("img_sync"),
+            "config": config,  # 完整的配置对象
+        }
+        
+        # 设置表情包目录
+        app.config["MEMES_DIR"] = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            app.config["PLUGIN_CONFIG"]["memes_path"]
+        )
+        
+        # 启动时同步配置
+        from .backend.api import sync_config
+        with app.app_context():
+            try:
+                sync_config()
+            except Exception as e:
+                print(f"启动时同步配置失败: {e}")
+    else:
+        print("警告: 配置格式不正确")
+
+    # 注册蓝图
+    from .backend.api import api
+    app.register_blueprint(api, url_prefix="/api")
+    
+    return app
