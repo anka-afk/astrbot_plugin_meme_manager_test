@@ -85,9 +85,9 @@ def get_emotions():
         # 直接从 astr_config 对象获取 tag_descriptions
         tag_descriptions = astr_config.get("tag_descriptions", {})
         
-        # 添加调试日志
-        current_app.logger.debug(f"astr_config 对象: {astr_config}")
-        current_app.logger.debug(f"tag_descriptions: {tag_descriptions}")
+        # 添加简短的调试日志
+        angry_desc = tag_descriptions.get("angry", "未找到")
+        current_app.logger.debug(f"[DEBUG] /emotions API - angry 的描述: {angry_desc}")
         
         return jsonify(tag_descriptions)
     except Exception as e:

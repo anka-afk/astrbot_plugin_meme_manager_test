@@ -127,10 +127,17 @@ def start_server(config=None):
 
     if config is not None:
         if hasattr(config, 'get'):
+            astr_config = config.get("astr_config")
+            if astr_config:
+                # 检查配置
+                tag_descriptions = astr_config.get("tag_descriptions", {})
+                angry_desc = tag_descriptions.get("angry", "未找到")
+                print(f"[DEBUG] webui启动时 angry 的描述: {angry_desc}")
+            
             app.config["PLUGIN_CONFIG"] = {
                 "memes_path": config.get("memes_path", "memes"),
                 "img_sync": config.get("img_sync"),
-                "astr_config": config.get("astr_config"),
+                "astr_config": astr_config,
             }
             
             # 设置表情包目录

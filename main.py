@@ -104,8 +104,10 @@ class MemeSender(Star):
         yield event.plain_result("表情包管理服务器启动中，请稍候……")
 
         try:
-            print("当前 astr_config:", self.astr_config)  # 添加调试输出
-            print("当前 tag_descriptions:", self.astr_config.get("tag_descriptions"))  # 添加调试输出
+            # 检查配置中 angry 的描述
+            tag_descriptions = self.astr_config.get("tag_descriptions", {})
+            angry_desc = tag_descriptions.get("angry", "未找到")
+            print(f"[DEBUG] angry 的描述: {angry_desc}")  # 检查 angry 的描述
             
             server_key, server_process = start_server({
                 "memes_path": self.config.get("memes_path", "memes"),
