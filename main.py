@@ -433,8 +433,13 @@ class MemeSender(Star):
         
         try:
             yield event.plain_result("开始同步到云端...")
-            success = self.img_sync.upload_to_remote()
-            if success:
+            # 启动同步进程
+            sync_process = self.img_sync.upload_to_remote()
+            
+            # 等待进程完成
+            sync_process.join()
+            
+            if sync_process.exitcode == 0:
                 yield event.plain_result("同步到云端完成！")
             else:
                 yield event.plain_result("同步到云端失败，请检查日志。")
@@ -451,8 +456,13 @@ class MemeSender(Star):
         
         try:
             yield event.plain_result("开始从云端同步...")
-            success = self.img_sync.download_to_local()
-            if success:
+            # 启动同步进程
+            sync_process = self.img_sync.download_to_local()
+            
+            # 等待进程完成
+            sync_process.join()
+            
+            if sync_process.exitcode == 0:
                 yield event.plain_result("从云端同步完成！")
                 # 重新加载表情配置
                 await self.reload_emotions()
@@ -461,3 +471,10 @@ class MemeSender(Star):
         except Exception as e:
             self.logger.error(f"从云端同步失败: {str(e)}")
             yield event.plain_result(f"从云端同步失败: {str(e)}")
+
+    def __del__(self):
+        """清理资源"""
+        if self.img_sync:
+            self.img_sync.stop_sync()
+        if self.server_process:
+            shutdown_server(self.server_process)
