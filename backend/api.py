@@ -338,7 +338,7 @@ def sync_emotion_map():
         )
         
         # 获取当前配置中的所有英文分类
-        configured_categories = set(english for english in emotion_map.values())
+        configured_english = set(emotion_map.values())
         
         # 删除多余的映射（配置中有但文件夹中没有的）
         for chinese, english in list(emotion_map.items()):
@@ -346,10 +346,16 @@ def sync_emotion_map():
                 del emotion_map[chinese]
         
         # 添加缺失的映射（文件夹中有但配置中没有的）
-        configured_english = set(emotion_map.values())
         for category in existing_categories:
             if category not in configured_english:
-                emotion_map[f"未命名_{category}"] = category
+                # 检查是否已经有这个英文名称的映射
+                has_mapping = False
+                for chinese, english in emotion_map.items():
+                    if english == category:
+                        has_mapping = True
+                        break
+                if not has_mapping:
+                    emotion_map[category] = category  # 使用英文名作为临时中文名
         
         # 更新配置
         bot_config["emotion_map"] = emotion_map

@@ -88,16 +88,38 @@ document.addEventListener("DOMContentLoaded", () => {
       // 分类标题
       const categoryTitle = document.createElement("h3");
       const chineseName = getChineseName(emotionMap, category);
-      const isUnnamed = chineseName.startsWith("未命名_");
+      const isUnnamed = chineseName === category;
       categoryTitle.textContent = isUnnamed
         ? `${category} (需要设置中文名)`
         : `${chineseName} (${category})`;
+
+      // 标题和按钮容器
+      const headerDiv = document.createElement("div");
+      headerDiv.style.display = "flex";
+      headerDiv.style.justifyContent = "space-between";
+      headerDiv.style.alignItems = "center";
+      headerDiv.style.width = "100%";
+
+      // 左侧：标题和编辑按钮
+      const leftDiv = document.createElement("div");
+      leftDiv.style.display = "flex";
+      leftDiv.style.alignItems = "center";
+      leftDiv.style.gap = "10px";
 
       // 编辑按钮
       const editButton = document.createElement("button");
       editButton.classList.add("edit-category-btn");
       editButton.textContent = isUnnamed ? "设置中文名" : "编辑";
       editButton.onclick = () => {
+        // 如果已经存在编辑容器，则移除
+        const existingEdit = categoryDiv.querySelector(
+          ".edit-category-container"
+        );
+        if (existingEdit) {
+          existingEdit.remove();
+          return;
+        }
+
         const editContainer = document.createElement("div");
         editContainer.classList.add("edit-category-container");
 
@@ -134,26 +156,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
         editContainer.appendChild(input);
         editContainer.appendChild(saveBtn);
-
-        // 如果已经存在编辑容器，则替换
-        const existingEdit = categoryDiv.querySelector(
-          ".edit-category-container"
-        );
-        if (existingEdit) {
-          existingEdit.replaceWith(editContainer);
-        } else {
-          titleContainer.appendChild(editContainer);
-        }
+        leftDiv.appendChild(editContainer);
       };
 
-      // 如果是未命名的类别，自动显示编辑界面
-      if (isUnnamed) {
-        editButton.click();
-      }
+      leftDiv.appendChild(categoryTitle);
+      leftDiv.appendChild(editButton);
 
-      titleContainer.appendChild(categoryTitle);
-      titleContainer.appendChild(editButton);
-      categoryDiv.appendChild(titleContainer);
+      // 右侧：删除按钮
+      const deleteCategoryBtn = document.createElement("button");
+      deleteCategoryBtn.classList.add("delete-category-btn");
+      deleteCategoryBtn.textContent = "删除分类";
+      deleteCategoryBtn.addEventListener("click", () =>
+        deleteCategory(category)
+      );
+
+      headerDiv.appendChild(leftDiv);
+      headerDiv.appendChild(deleteCategoryBtn);
+      categoryDiv.appendChild(headerDiv);
 
       // 创建表情列表容器
       const emojiListDiv = document.createElement("div");
@@ -528,8 +547,8 @@ document.addEventListener("DOMContentLoaded", () => {
       clearInterval(syncStatusInterval);
     }
 
-    // 设置新的定时器，每30秒检查一次
-    syncStatusInterval = setInterval(checkSyncStatus, 30000);
+    // 设置新的定时器，改为每5分钟检查一次
+    syncStatusInterval = setInterval(checkSyncStatus, 5 * 60 * 1000);
   }
 
   async function syncToRemote() {
