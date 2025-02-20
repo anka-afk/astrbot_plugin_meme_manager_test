@@ -20,7 +20,7 @@ from astrbot.api.all import *
 from astrbot.core.message.message_event_result import MessageChain
 from .webui import start_server, shutdown_server
 from .utils import get_public_ip
-from ..img_host.img_sync import ImageSync
+from .img_host.img_sync import ImageSync
 
 
 @register(
