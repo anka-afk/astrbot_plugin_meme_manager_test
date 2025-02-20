@@ -43,16 +43,15 @@ class ImageSync:
             config: 包含图床配置信息的字典，必须包含 key、secret 和 space
             local_dir: 本地图片目录的路径
         """
-        self.provider = StarDotsProvider(
-            {
-                "key": config["key"],
-                "secret": config["secret"],
-                "space": config["space"],
-                "local_dir": str(local_dir),
-            }
-        )
+        self.provider = StarDotsProvider({
+            "key": config["key"],
+            "secret": config["secret"],
+            "space": config["space"],
+            "local_dir": str(local_dir),
+        })
         self.sync_manager = SyncManager(
-            image_host=self.provider, local_dir=Path(local_dir)
+            image_host=self.provider, 
+            local_dir=Path(local_dir)
         )
         self.sync_process = None
         self._sync_task = None
@@ -122,7 +121,7 @@ class ImageSync:
             if self.sync_process.is_alive():
                 self.sync_process.kill()
             self.sync_process = None
-        if self._sync_task:
+        if self._sync_task and not self._sync_task.done():
             self._sync_task.cancel()
             self._sync_task = None
 
@@ -210,17 +209,12 @@ def run_sync_process(config: Dict[str, str], local_dir: Union[str, Path], task: 
     sync = ImageSync(config, local_dir)
     
     if task == 'upload':
-        status = sync.check_status()
-        if not status.get("to_upload"):
-            sys.exit(0)  # 没有文件需要上传，返回成功状态码
         success = sync.sync_manager.sync_to_remote()
         sys.exit(0 if success else 1)
     elif task == 'download':
-        status = sync.check_status()
-        if not status.get("to_download"):
-            sys.exit(0)  # 没有文件需要下载，返回成功状态码
         success = sync.sync_manager.sync_from_remote()
         sys.exit(0 if success else 1)
     elif task == 'sync_all':
-        success = sync.sync_all()
-        sys.exit(0 if success else 1)
+        upload_success = sync.sync_manager.sync_to_remote()
+        download_success = sync.sync_manager.sync_from_remote()
+        sys.exit(0 if upload_success and download_success else 1)
