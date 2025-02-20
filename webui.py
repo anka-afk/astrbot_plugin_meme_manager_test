@@ -60,19 +60,26 @@ def require_login():
         return redirect(url_for("login"))
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if session.get("authenticated"):
-        return render_template("index.html")
+        return redirect(url_for("index"))
     error = None
     if request.method == "POST":
         key = request.form.get("key")
         if key == SERVER_LOGIN_KEY:
             session["authenticated"] = True
-            return redirect(url_for("login"))
+            return redirect(url_for("index"))
         else:
             error = "秘钥错误，请重试。"
     return render_template("login.html", error=error)
+
+
+@app.route("/")
+def index():
+    if not session.get("authenticated"):
+        return redirect(url_for("login"))
+    return render_template("index.html")
 
 
 @app.route("/memes/<category>/<filename>")
