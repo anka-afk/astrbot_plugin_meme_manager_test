@@ -278,6 +278,93 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // 添加同步相关的函数
+  async function checkSyncStatus() {
+    try {
+      const response = await fetch("/api/sync/status");
+      if (!response.ok) throw new Error("获取同步状态失败");
+      const data = await response.json();
+
+      // 更新UI显示
+      document.getElementById("upload-count").textContent =
+        data.to_upload?.length || 0;
+      document.getElementById("download-count").textContent =
+        data.to_download?.length || 0;
+
+      return data;
+    } catch (error) {
+      console.error("检查同步状态失败:", error);
+      alert("检查同步状态失败: " + error.message);
+    }
+  }
+
+  async function syncToRemote() {
+    try {
+      const btn = document.getElementById("upload-sync-btn");
+      btn.disabled = true;
+      btn.textContent = "同步中...";
+
+      const response = await fetch("/api/sync/upload", { method: "POST" });
+      if (!response.ok) throw new Error("同步到云端失败");
+
+      const result = await response.json();
+      if (result.success) {
+        alert("同步到云端完成！");
+        await checkSyncStatus(); // 刷新同步状态
+      } else {
+        throw new Error(result.message || "同步失败");
+      }
+    } catch (error) {
+      console.error("同步到云端失败:", error);
+      alert("同步到云端失败: " + error.message);
+    } finally {
+      const btn = document.getElementById("upload-sync-btn");
+      btn.disabled = false;
+      btn.textContent = "同步到云端";
+    }
+  }
+
+  async function syncFromRemote() {
+    try {
+      const btn = document.getElementById("download-sync-btn");
+      btn.disabled = true;
+      btn.textContent = "同步中...";
+
+      const response = await fetch("/api/sync/download", { method: "POST" });
+      if (!response.ok) throw new Error("从云端同步失败");
+
+      const result = await response.json();
+      if (result.success) {
+        alert("从云端同步完成！");
+        await checkSyncStatus(); // 刷新同步状态
+        await fetchEmojis(); // 刷新表情包列表
+      } else {
+        throw new Error(result.message || "同步失败");
+      }
+    } catch (error) {
+      console.error("从云端同步失败:", error);
+      alert("从云端同步失败: " + error.message);
+    } finally {
+      const btn = document.getElementById("download-sync-btn");
+      btn.disabled = false;
+      btn.textContent = "从云端同步";
+    }
+  }
+
+  // 添加同步按钮的事件监听器
+  document
+    .getElementById("check-sync-btn")
+    ?.addEventListener("click", checkSyncStatus);
+  document
+    .getElementById("upload-sync-btn")
+    ?.addEventListener("click", syncToRemote);
+  document
+    .getElementById("download-sync-btn")
+    ?.addEventListener("click", syncFromRemote);
+
+  // 初始检查同步状态
+  checkSyncStatus();
+
   // 初始化加载数据
   fetchEmojis();
 });

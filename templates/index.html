@@ -15,6 +15,20 @@
       <div id="sidebar">
         <h2>目录</h2>
         <ul id="sidebar-list"></ul>
+
+        <!-- 添加同步控制面板 -->
+        <div class="sync-panel">
+          <h3>同步控制</h3>
+          <div id="sync-status">
+            <p>待上传: <span id="upload-count">0</span> 个文件</p>
+            <p>待下载: <span id="download-count">0</span> 个文件</p>
+          </div>
+          <div class="sync-buttons">
+            <button id="check-sync-btn">检查同步状态</button>
+            <button id="upload-sync-btn">同步到云端</button>
+            <button id="download-sync-btn">从云端同步</button>
+          </div>
+        </div>
       </div>
 
       <div id="content">

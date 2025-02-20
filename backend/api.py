@@ -9,6 +9,7 @@ from .models import (
 )
 import os
 import shutil
+import asyncio
 
 
 api = Blueprint("api", __name__)
@@ -165,5 +166,49 @@ def delete_category():
             return jsonify({"message": f"删除类别目录失败: {str(e)}"}), 500
 
     return jsonify({"message": "Category deleted successfully"}), 200
+
+
+# 添加新的同步相关 API 端点
+@api.route("/sync/status", methods=["GET"])
+def get_sync_status():
+    """获取同步状态"""
+    try:
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        img_sync = plugin_config.get("img_sync")
+        if not img_sync:
+            return jsonify({"message": "图床服务未配置"}), 400
+            
+        status = img_sync.check_status()
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({"message": f"检查同步状态失败: {str(e)}"}), 500
+
+@api.route("/sync/upload", methods=["POST"])
+async def sync_to_remote():
+    """同步到云端"""
+    try:
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        img_sync = plugin_config.get("img_sync")
+        if not img_sync:
+            return jsonify({"message": "图床服务未配置"}), 400
+            
+        success = await img_sync.start_sync('upload')
+        return jsonify({"success": success})
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+@api.route("/sync/download", methods=["POST"]) 
+async def sync_from_remote():
+    """从云端同步"""
+    try:
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        img_sync = plugin_config.get("img_sync")
+        if not img_sync:
+            return jsonify({"message": "图床服务未配置"}), 400
+            
+        success = await img_sync.start_sync('download')
+        return jsonify({"success": success})
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
 
 

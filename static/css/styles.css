@@ -268,3 +268,82 @@ input[type="file"] {
 .delete-category-btn:hover {
   background-color: #c0392b;
 }
+
+/* 添加同步面板样式 */
+.sync-panel {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sync-panel h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: #495057;
+}
+
+#sync-status {
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+#sync-status p {
+  margin: 5px 0;
+  color: #666;
+}
+
+.sync-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sync-buttons button {
+  width: 100%;
+  padding: 8px;
+  font-size: 14px;
+  margin: 0;
+}
+
+#check-sync-btn {
+  background-color: #007bff;
+}
+
+#check-sync-btn:hover {
+  background-color: #0056b3;
+}
+
+#upload-sync-btn {
+  background-color: #28a745;
+}
+
+#upload-sync-btn:hover {
+  background-color: #218838;
+}
+
+#download-sync-btn {
+  background-color: #17a2b8;
+}
+
+#download-sync-btn:hover {
+  background-color: #138496;
+}
+
+/* 添加同步状态指示器 */
+.sync-status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+.sync-status-pending {
+  background-color: #ffc107;
+}
+
+.sync-status-synced {
+  background-color: #28a745;
+}
