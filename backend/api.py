@@ -181,10 +181,10 @@ def get_sync_status():
         status = img_sync.check_status()
         return jsonify(status)
     except Exception as e:
-        return jsonify({"message": f"检查同步状态失败: {str(e)}"}), 500
+        return jsonify({"message": str(e)}), 500
 
 @api.route("/sync/upload", methods=["POST"])
-async def sync_to_remote():
+def sync_to_remote():
     """同步到云端"""
     try:
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
@@ -192,13 +192,14 @@ async def sync_to_remote():
         if not img_sync:
             return jsonify({"message": "图床服务未配置"}), 400
             
-        success = await img_sync.start_sync('upload')
-        return jsonify({"success": success})
+        # 启动同步进程，但不等待完成
+        img_sync.sync_process = img_sync._start_sync_process('upload')
+        return jsonify({"success": True})
     except Exception as e:
         return jsonify({"message": str(e)}), 500
 
 @api.route("/sync/download", methods=["POST"]) 
-async def sync_from_remote():
+def sync_from_remote():
     """从云端同步"""
     try:
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
@@ -206,8 +207,28 @@ async def sync_from_remote():
         if not img_sync:
             return jsonify({"message": "图床服务未配置"}), 400
             
-        success = await img_sync.start_sync('download')
-        return jsonify({"success": success})
+        # 启动同步进程，但不等待完成
+        img_sync.sync_process = img_sync._start_sync_process('download')
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+# 添加一个检查同步进程状态的端点
+@api.route("/sync/check_process", methods=["GET"])
+def check_sync_process():
+    """检查同步进程状态"""
+    try:
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        img_sync = plugin_config.get("img_sync")
+        if not img_sync or not img_sync.sync_process:
+            return jsonify({"completed": True, "success": True})
+            
+        if not img_sync.sync_process.is_alive():
+            success = img_sync.sync_process.exitcode == 0
+            img_sync.sync_process = None
+            return jsonify({"completed": True, "success": success})
+            
+        return jsonify({"completed": False})
     except Exception as e:
         return jsonify({"message": str(e)}), 500
 

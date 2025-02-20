@@ -307,12 +307,24 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/api/sync/upload", { method: "POST" });
       if (!response.ok) throw new Error("同步到云端失败");
 
-      const result = await response.json();
-      if (result.success) {
-        alert("同步到云端完成！");
-        await checkSyncStatus(); // 刷新同步状态
-      } else {
-        throw new Error(result.message || "同步失败");
+      // 开始轮询检查进度
+      while (true) {
+        const statusResponse = await fetch("/api/sync/check_process");
+        if (!statusResponse.ok) throw new Error("检查同步状态失败");
+        const status = await statusResponse.json();
+
+        if (status.completed) {
+          if (status.success) {
+            alert("同步到云端完成！");
+            await checkSyncStatus(); // 刷新同步状态
+          } else {
+            throw new Error("同步失败");
+          }
+          break;
+        }
+
+        // 等待1秒后再次检查
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     } catch (error) {
       console.error("同步到云端失败:", error);
@@ -333,13 +345,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/api/sync/download", { method: "POST" });
       if (!response.ok) throw new Error("从云端同步失败");
 
-      const result = await response.json();
-      if (result.success) {
-        alert("从云端同步完成！");
-        await checkSyncStatus(); // 刷新同步状态
-        await fetchEmojis(); // 刷新表情包列表
-      } else {
-        throw new Error(result.message || "同步失败");
+      // 开始轮询检查进度
+      while (true) {
+        const statusResponse = await fetch("/api/sync/check_process");
+        if (!statusResponse.ok) throw new Error("检查同步状态失败");
+        const status = await statusResponse.json();
+
+        if (status.completed) {
+          if (status.success) {
+            alert("从云端同步完成！");
+            await checkSyncStatus(); // 刷新同步状态
+            await fetchEmojis(); // 刷新表情包列表
+          } else {
+            throw new Error("同步失败");
+          }
+          break;
+        }
+
+        // 等待1秒后再次检查
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     } catch (error) {
       console.error("从云端同步失败:", error);
