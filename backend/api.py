@@ -315,15 +315,18 @@ def sync_config_internal():
     )
     
     # 获取当前配置
-    tag_descriptions = astr_config.get("tag_descriptions", {}).copy()
+    tag_descriptions = astr_config.get("tag_descriptions", {})
+    changed = False
     
-    # 仅为新类别生成默认描述
+    # 仅为新类别生成默认描述，不修改已有的描述
     for category in local_categories:
         if category not in tag_descriptions:
             tag_descriptions[category] = f"表达{category}的场景"  # 新类别的默认描述
+            changed = True
     
-    # 更新并保存配置
-    astr_config["tag_descriptions"] = tag_descriptions
-    astr_config.save_config()
+    # 只有在有变化时才保存配置
+    if changed:
+        astr_config["tag_descriptions"] = tag_descriptions
+        astr_config.save_config()
 
 
