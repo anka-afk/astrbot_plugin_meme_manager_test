@@ -32,6 +32,10 @@ class MemeSender(Star):
         self.config = config or {}
         self.astr_config = self.context.get_config()  # 获取 AstrBotConfig 对象
         
+        # 添加调试日志
+        print("[DEBUG] 插件初始化时 angry 的描述:", 
+              self.astr_config.get("tag_descriptions", {}).get("angry", "未找到"))
+        
         # 加载配置
         self.tag_descriptions = self.config.get(
             "tag_descriptions",

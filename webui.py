@@ -132,7 +132,7 @@ def start_server(config=None):
                 # 检查配置
                 tag_descriptions = astr_config.get("tag_descriptions", {})
                 angry_desc = tag_descriptions.get("angry", "未找到")
-                print(f"[DEBUG] webui启动时 angry 的描述: {angry_desc}")
+                print(f"[DEBUG] webui启动前 angry 的描述: {angry_desc}")
             
             app.config["PLUGIN_CONFIG"] = {
                 "memes_path": config.get("memes_path", "memes"),
@@ -146,11 +146,15 @@ def start_server(config=None):
                 app.config["PLUGIN_CONFIG"]["memes_path"]
             )
             
-            # 启动时同步配置
+            # 启动时同步配置 - 这里可能是问题所在
             from .backend.api import sync_config
             with app.app_context():
                 try:
+                    print("[DEBUG] 执行同步配置前 angry 的描述:", 
+                          app.config["PLUGIN_CONFIG"]["astr_config"].get("tag_descriptions", {}).get("angry", "未找到"))
                     sync_config()
+                    print("[DEBUG] 执行同步配置后 angry 的描述:", 
+                          app.config["PLUGIN_CONFIG"]["astr_config"].get("tag_descriptions", {}).get("angry", "未找到"))
                 except Exception as e:
                     print(f"启动时同步配置失败: {e}")
 

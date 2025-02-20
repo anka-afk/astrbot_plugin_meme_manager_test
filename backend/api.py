@@ -307,33 +307,25 @@ def rename_category():
 
 def sync_config_internal():
     """同步配置与文件夹结构的内部函数"""
-    # 获取配置对象
     plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
     astr_config = plugin_config.get("astr_config")
     
     if not astr_config:
         raise ValueError("未找到配置对象")
 
-    # 获取表情包文件夹下的所有目录
-    memes_dir = current_app.config["MEMES_DIR"]
-    local_categories = set(
-        d for d in os.listdir(memes_dir) 
-        if os.path.isdir(os.path.join(memes_dir, d))
-    )
-    
     # 获取当前配置
     tag_descriptions = astr_config.get("tag_descriptions", {})
     changed = False
     
-    # # 仅为新类别生成默认描述，不修改已有的描述
-    # for category in local_categories:
-    #     if category not in tag_descriptions:
-    #         tag_descriptions[category] = f"表达{category}的场景"  # 新类别的默认描述
-    #         changed = True
+    # 添加调试日志
+    print("[DEBUG] sync_config_internal 开始时 angry 的描述:", 
+          tag_descriptions.get("angry", "未找到"))
     
     # 只有在有变化时才保存配置
     if changed:
         astr_config["tag_descriptions"] = tag_descriptions
         astr_config.save_config()
+        print("[DEBUG] sync_config_internal 保存后 angry 的描述:", 
+              tag_descriptions.get("angry", "未找到"))
 
 
