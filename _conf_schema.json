@@ -1,25 +1,91 @@
 {
   "category_descriptions": {
-    "angry": "表达愤怒或不满的场景",
-    "happy": "表达开心或愉悦的场景",
-    "sad": "表达悲伤或遗憾的场景",
-    "surprised": "表达震惊或意外的场景",
-    "confused": "表达困惑或不解的场景",
-    "color": "表达调皮或暧昧的场景",
-    "cpu": "表达思维停滞的场景",
-    "fool": "表达自嘲或调侃的场景",
-    "givemoney": "表达想要报酬的场景",
-    "like": "表达喜爱之情的场景",
-    "see": "表达关注或观察的场景",
-    "shy": "表达害羞的场景",
-    "work": "表达工作相关的场景",
-    "scissors": "表达剪切或分割的场景",
-    "reply": "表达等待回复的场景",
-    "meow": "表达卖萌的场景",
-    "baka": "表达责备的场景",
-    "morning": "表达早安问候的场景",
-    "sleep": "表达疲惫或休息的场景",
-    "sigh": "表达叹息的场景"
+    "description": "表情包类别及其使用场景描述",
+    "type": "object",
+    "invisible": true,
+    "items": {
+      "angry": {
+        "type": "string",
+        "default": "表达愤怒或不满的场景"
+      },
+      "happy": {
+        "type": "string",
+        "default": "表达开心或愉悦的场景"
+      },
+      "sad": {
+        "type": "string",
+        "default": "表达悲伤或遗憾的场景"
+      },
+      "surprised": {
+        "type": "string",
+        "default": "表达震惊或意外的场景"
+      },
+      "confused": {
+        "type": "string",
+        "default": "表达困惑或不解的场景"
+      },
+      "color": {
+        "type": "string",
+        "default": "表达调皮或暧昧的场景"
+      },
+      "cpu": {
+        "type": "string",
+        "default": "表达思维停滞的场景"
+      },
+      "fool": {
+        "type": "string",
+        "default": "表达自嘲或调侃的场景"
+      },
+      "givemoney": {
+        "type": "string",
+        "default": "表达想要报酬的场景"
+      },
+      "like": {
+        "type": "string",
+        "default": "表达喜爱之情的场景"
+      },
+      "see": {
+        "type": "string",
+        "default": "表达关注或观察的场景"
+      },
+      "shy": {
+        "type": "string",
+        "default": "表达害羞的场景"
+      },
+      "work": {
+        "type": "string",
+        "default": "表达工作相关的场景"
+      },
+      "scissors": {
+        "type": "string",
+        "default": "表达剪切或分割的场景"
+      },
+      "reply": {
+        "type": "string",
+        "default": "表达等待回复的场景"
+      },
+      "meow": {
+        "type": "string",
+        "default": "表达卖萌的场景"
+      },
+      "baka": {
+        "type": "string",
+        "default": "表达责备的场景"
+      },
+      "morning": {
+        "type": "string",
+        "default": "表达早安问候的场景"
+      },
+      "sleep": {
+        "type": "string",
+        "default": "表达疲惫或休息的场景"
+      },
+      "sigh": {
+        "type": "string",
+        "default": "表达叹息的场景"
+      }
+    },
+    "default": {}
   },
   "memes_path": {
     "description": "表情包存储路径",
