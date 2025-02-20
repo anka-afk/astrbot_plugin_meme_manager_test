@@ -82,41 +82,35 @@ document.addEventListener("DOMContentLoaded", () => {
       emojis.forEach((emoji) => {
         const emojiItem = document.createElement("div");
         emojiItem.className = "emoji-item";
-
-        // 创建图片元素但先不设置 src
-        const img = document.createElement("img");
-        img.alt = emoji;
-        img.dataset.src = `/memes/${category}/${emoji}`; // 使用 data-src 存储实际路径
-        img.loading = "lazy"; // 使用浏览器原生懒加载
-
-        // 添加错误处理
-        img.onerror = () => handleImageError(emojiItem);
-
-        emojiItem.appendChild(img);
+        // 使用 data-bg 存储图片URL，而不是直接设置背景
+        emojiItem.setAttribute("data-bg", `/memes/${category}/${emoji}`);
         emojiGrid.appendChild(emojiItem);
       });
 
       categoryDiv.appendChild(emojiGrid);
       container.appendChild(categoryDiv);
+    });
 
-      // 使用 Intersection Observer 实现懒加载
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const img = entry.target;
-              img.src = img.dataset.src; // 当图片进入视口时才设置 src
-              observer.unobserve(img); // 加载后取消观察
-            }
-          });
-        },
-        {
-          rootMargin: "50px", // 提前 50px 开始加载
-        }
-      );
+    // 懒加载背景图片
+    const lazyBackgrounds = document.querySelectorAll(".emoji-item");
 
-      // 观察所有图片
-      emojiGrid.querySelectorAll("img").forEach((img) => observer.observe(img));
+    const observer = new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const emojiItem = entry.target;
+            const bgUrl = emojiItem.getAttribute("data-bg");
+            emojiItem.style.backgroundImage = `url('${bgUrl}')`; // 加载背景图片
+            emojiItem.removeAttribute("data-bg"); // 移除临时属性
+            observer.unobserve(emojiItem); // 停止观察
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    lazyBackgrounds.forEach((item) => {
+      observer.observe(item); // 观察每个表情包
     });
 
     // 添加编辑描述的事件监听器
