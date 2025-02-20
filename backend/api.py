@@ -110,18 +110,20 @@ def get_emotions():
         # 尝试从不同位置获取 tag_descriptions
         tag_descriptions = None
         
-        # 1. 直接从 bot_config 中获取
-        if isinstance(bot_config, dict):
-            current_app.logger.debug("bot_config 是字典类型")
+        # 1. 如果 bot_config 是 AstrBotConfig 实例
+        if hasattr(bot_config, 'config'):
+            current_app.logger.debug("从 AstrBotConfig 实例获取配置")
+            config_dict = bot_config.config
+            if isinstance(config_dict, dict):
+                tag_descriptions = config_dict.get("tag_descriptions")
+                current_app.logger.debug(f"从 config_dict 获取的 tag_descriptions: {tag_descriptions}")
+        
+        # 2. 如果 bot_config 是字典
+        if not tag_descriptions and isinstance(bot_config, dict):
+            current_app.logger.debug("从字典获取配置")
             tag_descriptions = bot_config.get("tag_descriptions")
-            current_app.logger.debug(f"从 bot_config 直接获取的 tag_descriptions: {tag_descriptions}")
-            
-        # 2. 从 config 属性中获取
-        if not tag_descriptions and hasattr(bot_config, 'config'):
-            current_app.logger.debug("尝试从 bot_config.config 获取")
-            tag_descriptions = bot_config.config.get("tag_descriptions")
-            current_app.logger.debug(f"从 bot_config.config 获取的 tag_descriptions: {tag_descriptions}")
-            
+            current_app.logger.debug(f"从字典获取的 tag_descriptions: {tag_descriptions}")
+        
         # 3. 如果都没有找到，返回空字典
         if not tag_descriptions:
             current_app.logger.debug("未找到 tag_descriptions，返回空字典")
