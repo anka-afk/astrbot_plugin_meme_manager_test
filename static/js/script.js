@@ -68,13 +68,20 @@ document.addEventListener("DOMContentLoaded", () => {
       const titleDiv = document.createElement("div");
       titleDiv.className = "category-title";
       titleDiv.innerHTML = `
-        <h2>${category}</h2>
+        <div class="category-title-container">
+          <h2>${category}</h2>
+          <button class="delete-category-btn" data-category="${category}">删除类别</button>
+        </div>
         <p class="description">${description}</p>
         <button class="edit-description-btn" data-category="${category}">
           编辑描述
         </button>
       `;
       categoryDiv.appendChild(titleDiv);
+
+      // 添加删除类别按钮的事件监听器
+      const deleteBtn = titleDiv.querySelector(".delete-category-btn");
+      deleteBtn.addEventListener("click", () => deleteCategory(category));
 
       const emojiGrid = document.createElement("div");
       emojiGrid.className = "emoji-grid";
