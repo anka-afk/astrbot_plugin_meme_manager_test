@@ -79,23 +79,16 @@ def start_server(config=None):
 
     app.secret_key = os.urandom(16)
 
-    # 设置日志级别为 WARNING，这样会禁止 INFO 和 DEBUG 级别的输出
-    import logging
-    logging.getLogger().setLevel(logging.WARNING)
-
     if config is not None:
-        # 确保配置中包含必要的信息
         if hasattr(config, 'get'):
             print("Debug - 收到的配置对象:", config)
-            print("Debug - config 类型:", type(config))
-            print("Debug - config 属性:", dir(config))
+            print("Debug - astr_config:", config.get("astr_config"))
             
             app.config["PLUGIN_CONFIG"] = {
                 "memes_path": config.get("memes_path", "memes"),
                 "img_sync": config.get("img_sync"),
-                "config": config,  # 完整的配置对象
+                "astr_config": config.get("astr_config"),  # 确保传递 AstrBotConfig
             }
-            print("Debug - 设置的 PLUGIN_CONFIG:", app.config["PLUGIN_CONFIG"])
             
             # 设置表情包目录
             app.config["MEMES_DIR"] = os.path.join(
@@ -110,9 +103,6 @@ def start_server(config=None):
                     sync_config()
                 except Exception as e:
                     print(f"启动时同步配置失败: {e}")
-        else:
-            print("警告: 配置格式不正确")
-            app.config["PLUGIN_CONFIG"] = config
 
     # 计算绝对路径并存入配置
     _base_dir = os.path.dirname(os.path.abspath(__file__))

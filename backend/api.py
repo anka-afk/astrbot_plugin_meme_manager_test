@@ -204,7 +204,11 @@ def sync_config_internal():
     """同步配置与文件夹结构的内部函数"""
     # 获取配置对象
     plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+    current_app.logger.debug(f"plugin_config: {plugin_config}")
+    
     astr_config = plugin_config.get("astr_config")
+    current_app.logger.debug(f"astr_config: {astr_config}")
+    
     if not astr_config:
         raise ValueError("未找到配置对象")
 

@@ -111,17 +111,12 @@ class MemeSender(Star):
         yield event.plain_result("表情包管理服务器启动中，请稍候……")
 
         try:
-            # 获取插件文件夹名称
-            plugin_dir = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
-            
             # 获取完整配置对象
-            config = self.context.get_config()
-            
-            # 创建精简的配置字典
             webui_config = {
                 "memes_path": self.meme_path,
                 "img_sync": self.img_sync,  # 传递 img_sync 实例
-                "bot_config": config,  # 传递完整配置对象
+                "astr_config": self.astr_config,  # 传递 AstrBotConfig 对象
+                "webui_port": self.config.get("webui_port", 5000),
             }
 
             # 启动服务器
