@@ -1,4 +1,4 @@
-name: meme_manager
+name: meme_manager_test
 desc: anka - 表情包管理器 - 支持表情包发送及表情包上传 - 支持管理表情包的webui
 help: |
   功能包含：
