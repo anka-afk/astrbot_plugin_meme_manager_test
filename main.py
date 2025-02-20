@@ -32,30 +32,30 @@ class MemeSender(Star):
 
         # 加载配置
         self.config = config or {}
-        self.emotion_map = self.config.get(
-            "emotion_map",
+        # 修改为标签描述映射
+        self.tag_descriptions = self.config.get(
+            "tag_descriptions",
             {
-                "生气": "angry",
-                "开心": "happy",
-                "悲伤": "sad",
-                "惊讶": "surprised",
-                "疑惑": "confused",
-                "色色": "color",
-                "色": "color",
-                "死机": "cpu",
-                "笨蛋": "fool",
-                "给钱": "givemoney",
-                "喜欢": "like",
-                "看": "see",
-                "害羞": "shy",
-                "下班": "work",
-                "剪刀": "scissors",
-                "不回我": "reply",
-                "喵": "meow",
-                "八嘎": "baka",
-                "早": "morning",
-                "睡觉": "sleep",
-                "唉": "sigh",
+                "angry": "表达愤怒或不满的场景",
+                "happy": "表达开心或愉悦的场景",
+                "sad": "表达悲伤或遗憾的场景",
+                "surprised": "表达震惊或意外的场景",
+                "confused": "表达困惑或不解的场景",
+                "color": "表达调皮或暧昧的场景",
+                "cpu": "表达思维停滞的场景",
+                "fool": "表达自嘲或调侃的场景",
+                "givemoney": "表达想要报酬的场景",
+                "like": "表达喜爱之情的场景",
+                "see": "表达关注或观察的场景",
+                "shy": "表达害羞的场景",
+                "work": "表达工作相关的场景",
+                "scissors": "表达剪切或分割的场景",
+                "reply": "表达等待回复的场景",
+                "meow": "表达卖萌的场景",
+                "baka": "表达责备的场景",
+                "morning": "表达早安问候的场景",
+                "sleep": "表达疲惫或休息的场景",
+                "sigh": "表达叹息的场景",
             },
         )
         self.image_host = self.config.get("image_host", "stardots")
@@ -110,7 +110,7 @@ class MemeSender(Star):
             
             # 创建配置字典，包含 img_sync 实例和配置对象
             webui_config = {
-                "emotion_map": self.emotion_map,
+                "emotion_map": self.tag_descriptions,
                 "memes_path": self.meme_path,
                 "webui_port": self.config.get("webui_port", 5000),
                 "img_sync": self.img_sync,  # 传递 img_sync 实例
@@ -151,7 +151,10 @@ class MemeSender(Star):
     @filter.command("查看表情包")
     async def list_emotions(self, event: AstrMessageEvent):
         """查看所有可用表情包类别"""
-        categories = "\n".join([f"- {emotion}" for emotion in self.emotion_map.keys()])
+        categories = "\n".join([
+            f"- {tag}: {desc}" 
+            for tag, desc in self.tag_descriptions.items()
+        ])
         yield event.plain_result(f"当前支持的表情包类别：\n{categories}")
 
     @filter.command("上传表情包")
@@ -163,7 +166,7 @@ class MemeSender(Star):
             )
             return
 
-        if category not in self.emotion_map:
+        if category not in self.tag_descriptions:
             yield event.plain_result(
                 f"无效的表情包类别：{category}\n使用/查看表情包查看可用类别"
             )
@@ -196,7 +199,7 @@ class MemeSender(Star):
             return
 
         category_cn = upload_state["category"]
-        category_en = self.emotion_map[category_cn]
+        category_en = self.tag_descriptions[category_cn]
         save_dir = os.path.join(self.meme_path, category_en)
 
         try:
@@ -273,7 +276,7 @@ class MemeSender(Star):
         config_path = os.path.join(self.meme_path, "emotions.json")
         if os.path.exists(config_path):
             with open(config_path, "r", encoding="utf-8") as f:
-                self.emotion_map.update(json.load(f))
+                self.tag_descriptions.update(json.load(f))
 
     def _check_meme_directories(self):
         """检查表情包目录是否存在并且包含图片"""
@@ -282,7 +285,7 @@ class MemeSender(Star):
             self.logger.error(f"表情包根目录不存在: {self.meme_path}")
             return
 
-        for emotion in self.emotion_map.values():
+        for emotion in self.tag_descriptions.values():
             emotion_path = os.path.join(self.meme_path, emotion)
             if not os.path.exists(emotion_path):
                 self.logger.error(f"表情目录不存在: {emotion_path}")
@@ -321,7 +324,7 @@ class MemeSender(Star):
             matches = re.finditer(pattern, text)
             for match in matches:
                 emotion = match.group(1)
-                if emotion in self.emotion_map:
+                if emotion in self.tag_descriptions:
                     self.found_emotions.append(emotion)
                     clean_text = clean_text.replace(match.group(0), "")
 
@@ -376,7 +379,7 @@ class MemeSender(Star):
 
         try:
             for emotion in self.found_emotions:
-                emotion_en = self.emotion_map.get(emotion)
+                emotion_en = self.tag_descriptions.get(emotion)
                 if not emotion_en:
                     continue
 
@@ -488,3 +491,13 @@ class MemeSender(Star):
             self.img_sync.stop_sync()
         if self.server_process:
             shutdown_server(self.server_process)
+
+    async def handle_message(self, event: AstrMessageEvent):
+        """处理消息，直接匹配英文标签"""
+        message = event.message.strip()
+        # 直接查找对应的英文标签
+        if message in self.tag_descriptions:
+            # 使用英文标签查找表情包
+            await self.send_random_emoji(event, message)
+            return True
+        return False

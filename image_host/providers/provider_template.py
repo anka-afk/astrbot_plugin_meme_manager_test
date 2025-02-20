@@ -9,17 +9,17 @@ class ProviderTemplate(ImageHostInterface):
         self.config = config
         
     def upload_image(self, file_path: Path) -> Dict[str, str]:
-        # 实现具体图床的上传逻辑
+        # 实现图床的上传逻辑
         raise NotImplementedError
         
     def delete_image(self, image_hash: str) -> bool:
-        # 实现具体图床的删除逻辑
+        # 实现图床的删除逻辑
         raise NotImplementedError
         
     def get_image_list(self) -> List[Dict[str, str]]:
-        # 实现具体图床的图片列表获取逻辑
+        # 实现图床的图片列表获取逻辑
         raise NotImplementedError
         
     def download_image(self, image_info: Dict[str, str], save_path: Path) -> bool:
-        # 实现具体图床的下载逻辑
+        # 实现图床的下载逻辑
         raise NotImplementedError 

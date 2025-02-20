@@ -95,15 +95,16 @@ def update_emoji():
         return jsonify({"message": "Emoji not found or update failed"}), 404
 
 
-# 获取表情包映射的中文-英文名
+# 获取标签描述映射
 @api.route("/emotions", methods=["GET"])
 def get_emotions():
+    """获取标签描述映射"""
     try:
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        emotion_map = plugin_config.get("emotion_map", {})
-        return jsonify(emotion_map)
+        tag_descriptions = plugin_config.get("tag_descriptions", {})
+        return jsonify(tag_descriptions)
     except Exception as e:
-        return jsonify({"message": f"无法读取 emotion_map: {str(e)}"}), 500
+        return jsonify({"message": f"无法读取标签描述: {str(e)}"}), 500
 
 
 def update_emotion_map(new_map):
@@ -381,5 +382,74 @@ def sync_config():
             "message": f"配置同步失败: {str(e)}",
             "detail": traceback.format_exc()
         }), 500
+
+@api.route("/category/update_description", methods=["POST"])
+def update_category_description():
+    """更新类别的描述"""
+    try:
+        data = request.get_json()
+        tag = data.get("tag")
+        description = data.get("description")
+        if not tag or not description:
+            return jsonify({"message": "Tag and description are required"}), 400
+
+        # 更新配置
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        bot_config = plugin_config.get("bot_config")
+        if not bot_config:
+            raise ValueError("未找到配置对象")
+
+        tag_descriptions = bot_config.get("tag_descriptions", {}).copy()
+        tag_descriptions[tag] = description
+        bot_config["tag_descriptions"] = tag_descriptions
+        bot_config.save_config()
+
+        # 同时更新 Flask 应用配置
+        plugin_config["tag_descriptions"] = tag_descriptions
+
+        return jsonify({"message": "Category description updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Failed to update category description: {str(e)}"}), 500
+
+def sync_tag_descriptions():
+    """同步表情包文件夹结构和配置"""
+    try:
+        # 获取配置对象
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        bot_config = plugin_config.get("bot_config")
+        if not bot_config:
+            raise ValueError("未找到配置对象")
+
+        # 获取当前的标签描述映射
+        tag_descriptions = bot_config.get("tag_descriptions", {}).copy()
+        
+        # 获取表情包文件夹下的所有目录
+        memes_dir = current_app.config["MEMES_DIR"]
+        existing_categories = set(
+            d for d in os.listdir(memes_dir) 
+            if os.path.isdir(os.path.join(memes_dir, d))
+        )
+        
+        # 删除多余的映射（配置中有但文件夹中没有的）
+        for tag in list(tag_descriptions.keys()):
+            if tag not in existing_categories:
+                del tag_descriptions[tag]
+        
+        # 添加缺失的映射（文件夹中有但配置中没有的）
+        for category in existing_categories:
+            if category not in tag_descriptions:
+                tag_descriptions[category] = f"未添加描述的{category}类别"
+        
+        # 更新配置
+        bot_config["tag_descriptions"] = tag_descriptions
+        bot_config.save_config()
+        
+        # 同时更新 Flask 应用配置
+        plugin_config["tag_descriptions"] = tag_descriptions
+        
+        return True
+    except Exception as e:
+        current_app.logger.error(f"同步配置失败: {str(e)}")
+        raise
 
 
