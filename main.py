@@ -116,8 +116,6 @@ class MemeSender(Star):
 
             # 获取公网 IP
             public_ip = await get_public_ip()
-            if not public_ip:
-                public_ip = "127.0.0.1"
 
             yield event.plain_result(
                 f"表情包管理服务器已启动！\n"
