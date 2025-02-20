@@ -257,6 +257,43 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // 添加编辑描述的处理函数
+  function setupEditDescriptionHandlers() {
+    const editButtons = document.querySelectorAll(".edit-description-btn");
+    editButtons.forEach((button) => {
+      button.addEventListener("click", async (e) => {
+        const category = e.target.dataset.category;
+        const descriptionElement =
+          e.target.parentElement.querySelector(".description");
+        const currentDescription = descriptionElement.textContent;
+
+        const newDescription = prompt("请输入新的描述:", currentDescription);
+        if (newDescription && newDescription !== currentDescription) {
+          try {
+            const response = await fetch("/api/category/update_description", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                tag: category,
+                description: newDescription,
+              }),
+            });
+
+            if (!response.ok) throw new Error("更新描述失败");
+
+            // 更新成功后刷新数据
+            fetchEmojis();
+          } catch (error) {
+            console.error("更新描述失败:", error);
+            alert("更新描述失败: " + error.message);
+          }
+        }
+      });
+    });
+  }
+
   // 修改检查同步状态的函数
   async function checkSyncStatus() {
     const statusDiv = document.getElementById("sync-status");
@@ -264,38 +301,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const response = await fetch("/api/sync/status");
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || "检查同步状态失败");
-      }
-      const status = await response.json();
+      if (!response.ok) throw new Error("检查同步状态失败");
+
+      const data = await response.json();
+      if (data.status === "error") throw new Error(data.message);
 
       // 更新状态显示
       let statusHtml = "";
-      if (status.to_upload && status.to_upload.length > 0) {
-        statusHtml += "<p>待上传文件：</p><ul>";
-        status.to_upload.slice(0, 5).forEach((file) => {
-          statusHtml += `<li>${file.category}/${file.filename}</li>`;
+      const { differences } = data;
+
+      if (differences.to_add.length > 0) {
+        statusHtml += "<p>需要添加到配置的类别：</p><ul>";
+        differences.to_add.forEach((category) => {
+          statusHtml += `<li>${category}</li>`;
         });
-        if (status.to_upload.length > 5) {
-          statusHtml += "<li>...</li>";
-        }
         statusHtml += "</ul>";
       }
 
-      if (status.to_download && status.to_download.length > 0) {
-        statusHtml += "<p>待下载文件：</p><ul>";
-        status.to_download.slice(0, 5).forEach((file) => {
-          statusHtml += `<li>${file.category}/${file.filename}</li>`;
+      if (differences.to_remove.length > 0) {
+        statusHtml += "<p>需要从配置中移除的类别：</p><ul>";
+        differences.to_remove.forEach((category) => {
+          statusHtml += `<li>${category}</li>`;
         });
-        if (status.to_download.length > 5) {
-          statusHtml += "<li>...</li>";
-        }
         statusHtml += "</ul>";
       }
 
       if (!statusHtml) {
-        statusHtml = "<p>所有文件已同步！</p>";
+        statusHtml = "<p>配置与文件夹结构一致！</p>";
       }
 
       statusDiv.innerHTML = statusHtml;

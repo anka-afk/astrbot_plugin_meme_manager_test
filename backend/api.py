@@ -122,6 +122,42 @@ def delete_category():
         return jsonify({"message": f"Failed to delete category: {str(e)}"}), 500
 
 
+@api.route("/sync/status", methods=["GET"])
+def get_sync_status():
+    """获取同步状态"""
+    try:
+        # 获取表情包文件夹下的所有目录
+        memes_dir = current_app.config["MEMES_DIR"]
+        categories = set(
+            d for d in os.listdir(memes_dir) 
+            if os.path.isdir(os.path.join(memes_dir, d))
+        )
+        
+        # 获取配置中的类别
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        config = plugin_config.get("config")
+        tag_descriptions = config.get("tag_descriptions", {}) if config else {}
+        
+        # 比较差异
+        config_categories = set(tag_descriptions.keys())
+        to_add = list(categories - config_categories)
+        to_remove = list(config_categories - categories)
+        
+        return jsonify({
+            "status": "ok",
+            "differences": {
+                "to_add": to_add,
+                "to_remove": to_remove
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "detail": traceback.format_exc()
+        }), 500
+
+
 @api.route("/sync/config", methods=["POST"])
 def sync_config():
     """同步配置与文件夹结构的 API 端点"""
@@ -129,6 +165,8 @@ def sync_config():
         sync_config_internal()
         return jsonify({"message": "配置同步成功"}), 200
     except Exception as e:
+        current_app.logger.error(f"同步配置失败: {str(e)}")
+        current_app.logger.error(f"错误详情: {traceback.format_exc()}")
         return jsonify({
             "message": f"配置同步失败: {str(e)}",
             "detail": traceback.format_exc()
