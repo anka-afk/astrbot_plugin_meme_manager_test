@@ -82,7 +82,18 @@ document.addEventListener("DOMContentLoaded", () => {
       emojis.forEach((emoji) => {
         const emojiItem = document.createElement("div");
         emojiItem.className = "emoji-item";
-        // 使用 data-bg 存储图片URL，而不是直接设置背景
+        // 设置样式以保持原有的布局
+        emojiItem.style.width = "150px";
+        emojiItem.style.height = "150px";
+        emojiItem.style.backgroundSize = "contain";
+        emojiItem.style.backgroundPosition = "center";
+        emojiItem.style.backgroundRepeat = "no-repeat";
+        emojiItem.style.margin = "5px";
+        emojiItem.style.cursor = "pointer";
+        emojiItem.style.border = "1px solid #ddd";
+        emojiItem.style.borderRadius = "4px";
+
+        // 使用 data-bg 存储图片URL
         emojiItem.setAttribute("data-bg", `/memes/${category}/${emoji}`);
         emojiGrid.appendChild(emojiItem);
       });
