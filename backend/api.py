@@ -82,8 +82,8 @@ def get_emotions():
         if not astr_config:
             raise ValueError("未找到配置对象")
         
-        # 直接从 astr_config 对象获取 tag_descriptions
-        tag_descriptions = astr_config.get("tag_descriptions", {})
+        # 直接从 astr_config 对象获取描述
+        tag_descriptions = astr_config.get("category_descriptions", {})
         
         # 添加简短的调试日志
         angry_desc = tag_descriptions.get("angry", "未找到")
@@ -314,7 +314,7 @@ def sync_config_internal():
         raise ValueError("未找到配置对象")
 
     # 获取当前配置
-    tag_descriptions = astr_config.get("tag_descriptions", {})
+    tag_descriptions = astr_config.get("category_descriptions", {})
     changed = False
     
     # 添加调试日志
@@ -323,7 +323,7 @@ def sync_config_internal():
     
     # 只有在有变化时才保存配置
     if changed:
-        astr_config["tag_descriptions"] = tag_descriptions
+        astr_config["category_descriptions"] = tag_descriptions
         astr_config.save_config()
         print("[DEBUG] sync_config_internal 保存后 angry 的描述:", 
               tag_descriptions.get("angry", "未找到"))

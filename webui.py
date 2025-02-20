@@ -130,7 +130,7 @@ def start_server(config=None):
             astr_config = config.get("astr_config")
             if astr_config:
                 # 检查配置
-                tag_descriptions = astr_config.get("tag_descriptions", {})
+                tag_descriptions = astr_config.get("category_descriptions", {})
                 angry_desc = tag_descriptions.get("angry", "未找到")
                 print(f"[DEBUG] webui启动前 angry 的描述: {angry_desc}")
             
@@ -151,10 +151,10 @@ def start_server(config=None):
             with app.app_context():
                 try:
                     print("[DEBUG] 执行同步配置前 angry 的描述:", 
-                          app.config["PLUGIN_CONFIG"]["astr_config"].get("tag_descriptions", {}).get("angry", "未找到"))
+                          app.config["PLUGIN_CONFIG"]["astr_config"].get("category_descriptions", {}).get("angry", "未找到"))
                     sync_config()
                     print("[DEBUG] 执行同步配置后 angry 的描述:", 
-                          app.config["PLUGIN_CONFIG"]["astr_config"].get("tag_descriptions", {}).get("angry", "未找到"))
+                          app.config["PLUGIN_CONFIG"]["astr_config"].get("category_descriptions", {}).get("angry", "未找到"))
                 except Exception as e:
                     print(f"启动时同步配置失败: {e}")
 

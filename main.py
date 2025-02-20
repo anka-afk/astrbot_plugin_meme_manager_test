@@ -34,11 +34,11 @@ class MemeSender(Star):
         
         # 添加调试日志
         print("[DEBUG] 插件初始化时 angry 的描述:", 
-              self.astr_config.get("tag_descriptions", {}).get("angry", "未找到"))
+              self.astr_config.get("category_descriptions", {}).get("angry", "未找到"))
         
         # 加载配置
         self.tag_descriptions = self.config.get(
-            "tag_descriptions",
+            "category_descriptions",
             {
                 "angry": "表达愤怒或不满的场景",
                 "happy": "表达开心或愉悦的场景",
@@ -109,7 +109,7 @@ class MemeSender(Star):
 
         try:
             # 检查配置中 angry 的描述
-            tag_descriptions = self.astr_config.get("tag_descriptions", {})
+            tag_descriptions = self.astr_config.get("category_descriptions", {})
             angry_desc = tag_descriptions.get("angry", "未找到")
             print(f"[DEBUG] angry 的描述: {angry_desc}")  # 检查 angry 的描述
             
