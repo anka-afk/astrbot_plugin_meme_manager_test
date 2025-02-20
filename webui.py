@@ -150,17 +150,15 @@ def shutdown_server(server_process):
 def create_app(config=None):
     app = Flask(__name__)
     
-    # 确保配置中包含必要的信息
     if hasattr(config, 'get'):
-        # 调试输出
-        print("Debug - 配置对象类型:", type(config))
-        print("Debug - 配置对象属性:", dir(config))
-        print("Debug - 配置对象方法:", [attr for attr in dir(config) if callable(getattr(config, attr))])
+        # 获取 AstrBotConfig 对象
+        astr_config = config.get("astr_config")
         
         app.config["PLUGIN_CONFIG"] = {
             "memes_path": config.get("memes_path", "memes"),
             "img_sync": config.get("img_sync"),
-            "config": config,  # 完整的配置对象
+            "config": config,  # 完整配置字典
+            "astr_config": astr_config,  # AstrBotConfig 对象
         }
         
         # 设置表情包目录

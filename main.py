@@ -29,10 +29,10 @@ from .image_host.img_sync import ImageSync
 class MemeSender(Star):
     def __init__(self, context: Context, config: dict = None):
         super().__init__(context)
-
-        # 加载配置
         self.config = config or {}
-        # 修改为标签描述映射
+        self.astr_config = self.context.get_config()  # 获取 AstrBotConfig 对象
+        
+        # 加载配置
         self.tag_descriptions = self.config.get(
             "tag_descriptions",
             {
@@ -79,8 +79,6 @@ class MemeSender(Star):
         self.logger = logging.getLogger(__name__)
         # 检查表情包目录
         self._check_meme_directories()
-        # 用于保存服务器进程对象
-        self.server_process = None
 
         # 初始化图床同步客户端
         self.img_sync = None
@@ -95,6 +93,17 @@ class MemeSender(Star):
                     },
                     local_dir=self.meme_path
                 )
+
+        # 启动 WebUI
+        self.server_process = None
+        self.server_key = None
+        if self.config.get("webui_enabled", True):
+            self.server_key, self.server_process = start_server({
+                "memes_path": self.config.get("memes_path", "memes"),
+                "img_sync": self.config.get("img_sync"),
+                "astr_config": self.astr_config,  # 传递 AstrBotConfig 对象
+                **self.config
+            })
 
     @filter.command("启动表情包管理服务器")
     async def start_server_command(self, event: AstrMessageEvent):

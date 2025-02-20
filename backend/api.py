@@ -77,10 +77,10 @@ def get_emotions():
     """获取标签描述映射"""
     try:
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        config = plugin_config.get("config")
+        astr_config = plugin_config.get("astr_config")
         
         # 获取配置中的标签描述
-        tag_descriptions = config.get("tag_descriptions", {}) if config else {}
+        tag_descriptions = astr_config["tag_descriptions"] if astr_config else {}
         current_app.logger.debug(f"从配置获取的 tag_descriptions: {tag_descriptions}")
         
         return jsonify(tag_descriptions)
@@ -106,17 +106,15 @@ def delete_category():
 
         # 更新配置
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        config = plugin_config.get("config")
-        if config:
+        astr_config = plugin_config.get("astr_config")
+        if astr_config:
             # 从 tag_descriptions 中移除
-            tag_descriptions = config.get("tag_descriptions", {})
+            tag_descriptions = astr_config.get("tag_descriptions", {})
             if category in tag_descriptions:
                 del tag_descriptions[category]
-                config["tag_descriptions"] = tag_descriptions
-                config.save_config()
+                astr_config["tag_descriptions"] = tag_descriptions
+                astr_config.save_config()
 
-        # 删除成功后同步配置
-        sync_config()
         return jsonify({"message": "Category deleted successfully"}), 200
     except Exception as e:
         return jsonify({"message": f"Failed to delete category: {str(e)}"}), 500
@@ -185,17 +183,17 @@ def update_category_description():
 
         # 获取配置
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        config = plugin_config.get("config")
-        if not config:
+        astr_config = plugin_config.get("astr_config")
+        if not astr_config:
             return jsonify({"message": "Config not found"}), 404
             
         # 更新描述
-        tag_descriptions = config.get("tag_descriptions", {})
+        tag_descriptions = astr_config.get("tag_descriptions", {})
         tag_descriptions[category] = description
-        config["tag_descriptions"] = tag_descriptions
+        astr_config["tag_descriptions"] = tag_descriptions
         
         # 保存配置
-        config.save_config()
+        astr_config.save_config()
         
         return jsonify({"message": "Category description updated successfully"}), 200
     except Exception as e:
@@ -206,8 +204,8 @@ def sync_config_internal():
     """同步配置与文件夹结构的内部函数"""
     # 获取配置对象
     plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-    config = plugin_config.get("config")
-    if not config:
+    astr_config = plugin_config.get("astr_config")
+    if not astr_config:
         raise ValueError("未找到配置对象")
 
     # 获取表情包文件夹下的所有目录
@@ -218,7 +216,7 @@ def sync_config_internal():
     )
     
     # 更新标签描述
-    tag_descriptions = config.get("tag_descriptions", {}).copy()
+    tag_descriptions = astr_config.get("tag_descriptions", {}).copy()
     
     # 删除不存在的类别
     for tag in list(tag_descriptions.keys()):
@@ -231,7 +229,7 @@ def sync_config_internal():
             tag_descriptions[category] = f"表达{category}的场景"
     
     # 更新并保存配置
-    config["tag_descriptions"] = tag_descriptions
-    config.save_config()
+    astr_config["tag_descriptions"] = tag_descriptions
+    astr_config.save_config()
 
 
