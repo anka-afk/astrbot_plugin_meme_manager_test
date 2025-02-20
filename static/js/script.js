@@ -41,6 +41,30 @@ document.addEventListener("DOMContentLoaded", () => {
     return category;
   }
 
+  // 添加图片加载错误处理函数
+  function handleImageError(emojiItem) {
+    const maxRetries = 2;
+    let retryCount = parseInt(emojiItem.dataset.retryCount || "0");
+
+    if (retryCount < maxRetries) {
+      // 增加重试计数
+      retryCount++;
+      emojiItem.dataset.retryCount = retryCount;
+
+      // 延迟后重试加载
+      setTimeout(() => {
+        console.log(`重试加载图片 (${retryCount}/${maxRetries})`);
+        const bgUrl = emojiItem.getAttribute("data-bg");
+        emojiItem.style.backgroundImage = `url('${bgUrl}?retry=${retryCount}')`;
+      }, 1000 * retryCount); // 递增延迟时间
+    } else {
+      // 达到最大重试次数，显示错误状态
+      emojiItem.classList.add("image-load-error");
+      emojiItem.style.backgroundImage = "none";
+      emojiItem.innerHTML += '<div class="error-overlay">加载失败</div>';
+    }
+  }
+
   // 根据数据生成 DOM 节点，展示每个分类及其表情包，并添加上传块
   function displayCategories(data, emotionMap) {
     if (!categoriesContainer) return;
@@ -84,8 +108,32 @@ document.addEventListener("DOMContentLoaded", () => {
         const emojiItem = document.createElement("div");
         emojiItem.classList.add("emoji-item");
 
-        // 使用懒加载的背景图片（设置 data-bg 属性用于懒加载）
-        emojiItem.setAttribute("data-bg", `/memes/${category}/${emoji}`);
+        // 创建实际的图片元素
+        const img = new Image();
+        img.style.display = "none"; // 先隐藏图片
+
+        // 设置加载超时
+        const timeoutId = setTimeout(() => {
+          img.src = ""; // 取消加载
+          handleImageError(emojiItem);
+        }, 5000); // 5秒超时
+
+        img.onload = () => {
+          clearTimeout(timeoutId);
+          emojiItem.style.backgroundImage = `url('${img.src}')`;
+          img.remove(); // 移除临时图片元素
+        };
+
+        img.onerror = () => {
+          clearTimeout(timeoutId);
+          handleImageError(emojiItem);
+          img.remove(); // 移除临时图片元素
+        };
+
+        const imgUrl = `/memes/${category}/${emoji}`;
+        emojiItem.setAttribute("data-bg", imgUrl);
+        img.src = imgUrl;
+        emojiItem.appendChild(img);
 
         // 删除按钮（右上角）
         const deleteBtn = document.createElement("button");
