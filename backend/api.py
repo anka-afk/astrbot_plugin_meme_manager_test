@@ -101,27 +101,37 @@ def get_emotions():
     """获取标签描述映射"""
     try:
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        current_app.logger.debug(f"plugin_config: {plugin_config}")
+        
         bot_config = plugin_config.get("bot_config", {})
+        current_app.logger.debug(f"bot_config: {bot_config}")
+        current_app.logger.debug(f"bot_config type: {type(bot_config)}")
         
         # 尝试从不同位置获取 tag_descriptions
         tag_descriptions = None
         
         # 1. 直接从 bot_config 中获取
         if isinstance(bot_config, dict):
+            current_app.logger.debug("bot_config 是字典类型")
             tag_descriptions = bot_config.get("tag_descriptions")
+            current_app.logger.debug(f"从 bot_config 直接获取的 tag_descriptions: {tag_descriptions}")
             
         # 2. 从 config 属性中获取
         if not tag_descriptions and hasattr(bot_config, 'config'):
+            current_app.logger.debug("尝试从 bot_config.config 获取")
             tag_descriptions = bot_config.config.get("tag_descriptions")
+            current_app.logger.debug(f"从 bot_config.config 获取的 tag_descriptions: {tag_descriptions}")
             
         # 3. 如果都没有找到，返回空字典
         if not tag_descriptions:
+            current_app.logger.debug("未找到 tag_descriptions，返回空字典")
             tag_descriptions = {}
             
-        current_app.logger.debug(f"获取到的标签描述: {tag_descriptions}")
+        current_app.logger.debug(f"最终返回的 tag_descriptions: {tag_descriptions}")
         return jsonify(tag_descriptions)
     except Exception as e:
         current_app.logger.error(f"获取标签描述失败: {str(e)}")
+        current_app.logger.error(f"错误详情: {traceback.format_exc()}")
         return jsonify({"message": f"无法读取标签描述: {str(e)}"}), 500
 
 

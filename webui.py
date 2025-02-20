@@ -86,11 +86,16 @@ def start_server(config=None):
     if config is not None:
         # 确保配置中包含必要的信息
         if hasattr(config, 'get'):
+            print("Debug - 收到的配置对象:", config)
+            print("Debug - config 类型:", type(config))
+            print("Debug - config 属性:", dir(config))
+            
             app.config["PLUGIN_CONFIG"] = {
                 "memes_path": config.get("memes_path", "memes"),
                 "img_sync": config.get("img_sync"),
                 "bot_config": config.get("bot_config"),  # 完整的配置对象
             }
+            print("Debug - 设置的 PLUGIN_CONFIG:", app.config["PLUGIN_CONFIG"])
         else:
             print("警告: 配置格式不正确")
             app.config["PLUGIN_CONFIG"] = config
