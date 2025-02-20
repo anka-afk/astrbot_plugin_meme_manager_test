@@ -133,8 +133,8 @@ def get_sync_status():
         
         # 获取配置中的类别
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        config = plugin_config.get("config")
-        tag_descriptions = config.get("tag_descriptions", {}) if config else {}
+        astr_config = plugin_config.get("astr_config")
+        tag_descriptions = astr_config.get("tag_descriptions", {}) if astr_config else {}
         
         # 比较差异
         config_categories = set(tag_descriptions.keys())
