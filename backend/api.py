@@ -102,9 +102,26 @@ def get_emotions():
     try:
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
         bot_config = plugin_config.get("bot_config", {})
-        tag_descriptions = bot_config.get("tag_descriptions", {})
+        
+        # 尝试从不同位置获取 tag_descriptions
+        tag_descriptions = None
+        
+        # 1. 直接从 bot_config 中获取
+        if isinstance(bot_config, dict):
+            tag_descriptions = bot_config.get("tag_descriptions")
+            
+        # 2. 从 config 属性中获取
+        if not tag_descriptions and hasattr(bot_config, 'config'):
+            tag_descriptions = bot_config.config.get("tag_descriptions")
+            
+        # 3. 如果都没有找到，返回空字典
+        if not tag_descriptions:
+            tag_descriptions = {}
+            
+        current_app.logger.debug(f"获取到的标签描述: {tag_descriptions}")
         return jsonify(tag_descriptions)
     except Exception as e:
+        current_app.logger.error(f"获取标签描述失败: {str(e)}")
         return jsonify({"message": f"无法读取标签描述: {str(e)}"}), 500
 
 

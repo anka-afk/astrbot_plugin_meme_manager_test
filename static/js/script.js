@@ -88,25 +88,47 @@ document.addEventListener("DOMContentLoaded", () => {
       const headerDiv = document.createElement("div");
       headerDiv.style.display = "flex";
       headerDiv.style.justifyContent = "space-between";
-      headerDiv.style.alignItems = "center";
+      headerDiv.style.alignItems = "flex-start";
       headerDiv.style.width = "100%";
 
-      // 左侧：标题和编辑按钮
+      // 左侧：标题、描述和编辑按钮
       const leftDiv = document.createElement("div");
       leftDiv.style.display = "flex";
-      leftDiv.style.alignItems = "center";
+      leftDiv.style.flexDirection = "column";
       leftDiv.style.gap = "10px";
+
+      // 标题行
+      const titleRow = document.createElement("div");
+      titleRow.style.display = "flex";
+      titleRow.style.alignItems = "center";
+      titleRow.style.gap = "10px";
 
       // 分类标题
       const categoryTitle = document.createElement("h3");
-      const description =
-        tagDescriptions[category] || `未添加描述的${category}类别`;
-      categoryTitle.textContent = `${category} (${description})`;
+      categoryTitle.style.margin = "0";
+      categoryTitle.textContent = category;
 
       // 编辑按钮
       const editButton = document.createElement("button");
       editButton.classList.add("edit-category-btn");
       editButton.textContent = "编辑描述";
+
+      titleRow.appendChild(categoryTitle);
+      titleRow.appendChild(editButton);
+
+      // 描述文本
+      const descriptionText = document.createElement("p");
+      descriptionText.classList.add("category-description");
+      descriptionText.style.margin = "0";
+      descriptionText.style.color = "#666";
+      descriptionText.style.fontSize = "0.9em";
+      const description =
+        tagDescriptions[category] || `未添加描述的${category}类别`;
+      descriptionText.textContent = description;
+
+      leftDiv.appendChild(titleRow);
+      leftDiv.appendChild(descriptionText);
+
       editButton.onclick = () => {
         const existingEdit = categoryDiv.querySelector(
           ".edit-category-container"
@@ -154,9 +176,6 @@ document.addEventListener("DOMContentLoaded", () => {
         editContainer.appendChild(saveBtn);
         leftDiv.appendChild(editContainer);
       };
-
-      leftDiv.appendChild(categoryTitle);
-      leftDiv.appendChild(editButton);
 
       // 右侧：删除按钮
       const deleteCategoryBtn = document.createElement("button");
@@ -295,7 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
         tagDescriptions[category] || `未添加描述的${category}类别`;
       const a = document.createElement("a");
       a.href = "#category-" + category;
-      a.textContent = `${category} (${description})`;
+      a.innerHTML = `${category}<br><small style="color: #666">${description}</small>`;
       li.appendChild(a);
       sidebarList.appendChild(li);
     }
