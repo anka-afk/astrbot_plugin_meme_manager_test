@@ -331,6 +331,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const maxRetries = 10; // 最大重试次数
     const retryDelay = 1000; // 重试延迟（毫秒）
 
+    // 获取按钮并显示加载状态
+    const btn = document.getElementById("check-sync-btn");
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "检查中...";
+    }
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const controller = new AbortController();
@@ -359,6 +366,18 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("download-count").textContent =
           data.to_download?.length || 0;
 
+        // 显示检查完成通知
+        const uploadCount = data.to_upload?.length || 0;
+        const downloadCount = data.to_download?.length || 0;
+
+        let message;
+        if (uploadCount === 0 && downloadCount === 0) {
+          message = "检查完成：所有文件已同步！";
+        } else {
+          message = `检查完成：发现 ${uploadCount} 个待上传文件，${downloadCount} 个待下载文件`;
+        }
+        alert(message);
+
         return data;
       } catch (error) {
         console.error(
@@ -382,6 +401,12 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
           // 等待一段时间后重试
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        }
+      } finally {
+        // 恢复按钮状态
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "检查同步状态";
         }
       }
     }
