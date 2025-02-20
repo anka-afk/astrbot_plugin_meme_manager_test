@@ -80,7 +80,17 @@ def start_server(config=None):
     app.secret_key = os.urandom(16)
 
     if config is not None:
-        app.config["PLUGIN_CONFIG"] = config
+        # 确保配置中包含 img_sync 实例
+        if hasattr(config, 'get') and config.get('img_sync'):
+            app.config["PLUGIN_CONFIG"] = {
+                "emotion_map": config.get("emotion_map", {}),
+                "img_sync": config.get("img_sync"),  # 传递 img_sync 实例
+                "memes_path": config.get("memes_path", "memes"),
+                # ... 其他配置项 ...
+            }
+        else:
+            print("警告: 配置中缺少 img_sync 实例")
+            app.config["PLUGIN_CONFIG"] = config
 
     # 计算绝对路径并存入配置
     _base_dir = os.path.dirname(os.path.abspath(__file__))

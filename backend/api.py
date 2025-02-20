@@ -174,7 +174,9 @@ def get_sync_status():
     """获取同步状态"""
     try:
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        print("Debug - PLUGIN_CONFIG:", plugin_config)  # 调试输出
         img_sync = plugin_config.get("img_sync")
+        print("Debug - img_sync:", img_sync)  # 调试输出
         if not img_sync:
             return jsonify({
                 "error": "配置错误",
