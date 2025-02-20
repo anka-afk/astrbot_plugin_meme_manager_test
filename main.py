@@ -102,12 +102,16 @@ class MemeSender(Star):
         yield event.plain_result("表情包管理服务器启动中，请稍候……")
 
         try:
+            # 获取插件文件夹名称
+            plugin_dir = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
+            
             # 创建配置字典，包含 img_sync 实例
             config = {
                 "emotion_map": self.emotion_map,
                 "memes_path": self.meme_path,
                 "webui_port": self.config.get("webui_port", 5000),
                 "img_sync": self.img_sync,  # 传递 img_sync 实例
+                "plugin_dir": plugin_dir,  # 传递插件文件夹名称
             }
 
             # 启动服务器

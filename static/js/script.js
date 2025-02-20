@@ -145,6 +145,47 @@ document.addEventListener("DOMContentLoaded", () => {
         emojiListDiv.appendChild(emojiItem);
       });
 
+      // 检查是否缺少中文映射
+      if (chineseName === category) {
+        // 添加映射输入框
+        const mappingDiv = document.createElement("div");
+        mappingDiv.classList.add("mapping-input");
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = "请输入中文名称";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "保存映射";
+        saveBtn.addEventListener("click", async () => {
+          const chinese = input.value.trim();
+          if (chinese) {
+            try {
+              const response = await fetch("/api/category/update_mapping", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  english: category,
+                  chinese: chinese,
+                }),
+              });
+              if (!response.ok) {
+                throw new Error("更新映射失败");
+              }
+              // 重新加载数据
+              fetchEmojis();
+            } catch (error) {
+              console.error("更新映射失败:", error);
+              alert("更新映射失败: " + error.message);
+            }
+          }
+        });
+
+        mappingDiv.appendChild(input);
+        mappingDiv.appendChild(saveBtn);
+        emojiListDiv.insertBefore(mappingDiv, emojiListDiv.firstChild);
+      }
+
       // 上传块：拖拽或点击上传新的表情包
       const uploadBlock = document.createElement("div");
       uploadBlock.classList.add("upload-emoji");
@@ -270,20 +311,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 删除表情包类别
   async function deleteCategory(category) {
-    if (!confirm("是否删除该分类及其所有表情包？")) return;
-    if (!confirm("请再次确认删除该分类，此操作不可恢复！")) return;
+    if (
+      !confirm(
+        `确定要删除分类 "${category}" 吗？这将同时删除配置文件中的映射关系。`
+      )
+    ) {
+      return;
+    }
+
     try {
       const response = await fetch("/api/category/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category }),
       });
+
       if (!response.ok) {
-        console.error("删除分类失败，响应异常");
+        throw new Error("删除分类失败");
       }
+
+      // 重新加载数据
       fetchEmojis();
     } catch (error) {
-      console.error("删除分类失败", error);
+      console.error("删除分类失败:", error);
+      alert("删除分类失败: " + error.message);
     }
   }
 
