@@ -17,6 +17,8 @@ def scan_emoji_folder():
                 if f.lower().endswith((".png", ".jpg", ".jpeg", ".gif"))
             ]
             emoji_data[category] = emoji_files  # 将表情包数组赋值给类别
+        else:
+            emoji_data[category] = []  # 确保每个类别都有一个数组，即使为空
     return emoji_data
 
 
@@ -24,7 +26,7 @@ def get_emoji_by_category(category):
     """获取指定类别下的所有表情包"""
     category_path = os.path.join(MEMES_DIR, category)
     if not os.path.isdir(category_path):
-        return None
+        return []  # 返回空数组而不是 None
     emoji_files = [
         f
         for f in os.listdir(category_path)
