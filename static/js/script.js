@@ -47,18 +47,18 @@ document.addEventListener("DOMContentLoaded", () => {
     container.innerHTML = "";
 
     Object.entries(emojiData).forEach(([category, emojis]) => {
-      console.log(`类别: ${category}, 表情包:`, emojis); // 添加调试信息
+      // 移除调试信息
+      // console.log(`类别: ${category}, 表情包:`, emojis); // 添加调试信息
 
+      // 移除检查逻辑
       // 确保 emojis 是一个数组
-      if (!Array.isArray(emojis)) {
-        console.error(`类别 "${category}" 的表情包数据格式不正确`);
-        emojis = []; // 如果不是数组，设置为一个空数组
-      } else if (typeof emojis === "string") {
-        console.error(
-          `类别 "${category}" 的表情包数据格式不正确，实际为字符串`
-        );
-        emojis = []; // 如果是字符串，设置为一个空数组
-      }
+      // if (!Array.isArray(emojis)) {
+      //     console.error(`类别 "${category}" 的表情包数据格式不正确`);
+      //     emojis = []; // 如果不是数组，设置为一个空数组
+      // } else if (typeof emojis === "string") {
+      //     console.error(`类别 "${category}" 的表情包数据格式不正确，实际为字符串`);
+      //     emojis = []; // 如果是字符串，设置为一个空数组
+      // }
 
       const categoryDiv = document.createElement("div");
       categoryDiv.className = "category";
@@ -68,23 +68,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const titleDiv = document.createElement("div");
       titleDiv.className = "category-title";
       titleDiv.innerHTML = `
-        <div class="category-header">
-          <div class="category-name" id="category-name-${category}">${category}</div>
-          <div class="category-actions">
-            <button class="edit-category-btn" onclick="editCategory('${category}')">编辑类别</button>
-            <button class="delete-category-btn" data-category="${category}">删除类别</button>
-          </div>
-        </div>
-        <div class="category-edit-form" id="category-edit-${category}" style="display: none;">
-          <input type="text" class="category-name-input" value="${category}" placeholder="类别名称">
-          <input type="text" class="category-desc-input" value="${description}" placeholder="类别描述">
-          <div class="edit-buttons">
-            <button class="save-edit-btn" onclick="saveCategory('${category}')">保存</button>
-            <button class="cancel-edit-btn" onclick="cancelEdit('${category}')">取消</button>
-          </div>
-        </div>
-        <p class="description" id="category-desc-${category}">${description}</p>
-      `;
+            <div class="category-header">
+                <div class="category-name" id="category-name-${category}">${category}</div>
+                <div class="category-actions">
+                    <button class="edit-category-btn" onclick="editCategory('${category}')">编辑类别</button>
+                    <button class="delete-category-btn" data-category="${category}">删除类别</button>
+                </div>
+            </div>
+            <div class="category-edit-form" id="category-edit-${category}" style="display: none;">
+                <input type="text" class="category-name-input" value="${category}" placeholder="类别名称">
+                <input type="text" class="category-desc-input" value="${description}" placeholder="类别描述">
+                <div class="edit-buttons">
+                    <button class="save-edit-btn" onclick="saveCategory('${category}')">保存</button>
+                    <button class="cancel-edit-btn" onclick="cancelEdit('${category}')">取消</button>
+                </div>
+            </div>
+            <p class="description" id="category-desc-${category}">${description}</p>
+        `;
       categoryDiv.appendChild(titleDiv);
 
       // 添加删除类别按钮的事件监听器
