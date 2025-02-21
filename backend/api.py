@@ -122,47 +122,33 @@ def delete_category():
 def get_sync_status():
     """获取同步状态"""
     try:
-        # 获取表情包文件夹下的所有目录
-        memes_dir = current_app.config["MEMES_DIR"]
-        categories = set(
-            d for d in os.listdir(memes_dir) 
-            if os.path.isdir(os.path.join(memes_dir, d))
-        )
-        
-        # 获取配置中的类别
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        tag_descriptions = plugin_config.get("tag_descriptions", {}) if plugin_config else {}
-        
-        # 比较差异
-        config_categories = set(tag_descriptions.keys())
-        to_add = list(categories - config_categories)
-        to_remove = list(config_categories - categories)
-        
-        # 获取图床同步状态
         img_sync = plugin_config.get("img_sync")
         if not img_sync:
-            return jsonify({"error": "图床服务未配置"}), 400
-        
-        # 获取待上传和待下载的文件
-        to_upload = img_sync.get_files_to_upload()  # 需要实现这个方法
-        to_download = img_sync.get_files_to_download()  # 需要实现这个方法
-
-        return jsonify({
-            "status": "ok",
-            "differences": {
-                "to_add": to_add,
-                "to_remove": to_remove
-            },
-            "img_sync": {
-                "to_upload": to_upload,
-                "to_download": to_download
-            }
-        })
+            return jsonify({
+                "error": "配置错误",
+                "detail": "图床服务未配置",
+                "config": str(plugin_config)
+            }), 400
+            
+        try:
+            # 添加超时处理
+            status = img_sync.check_status()
+            return jsonify(status)
+        except Exception as e:
+            import traceback
+            return jsonify({
+                "error": "同步状态检查失败",
+                "detail": str(e),
+                "traceback": traceback.format_exc()
+            }), 500
+            
     except Exception as e:
+        import traceback
         return jsonify({
-            "status": "error",
-            "message": str(e),
-            "detail": traceback.format_exc()
+            "error": "服务器错误",
+            "detail": str(e),
+            "traceback": traceback.format_exc()
         }), 500
 
 
