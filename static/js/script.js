@@ -80,7 +80,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const emojiGrid = document.createElement("div");
       emojiGrid.className = "emoji-grid";
-      // 设置网格布局
       emojiGrid.style.display = "flex";
       emojiGrid.style.flexWrap = "wrap";
       emojiGrid.style.gap = "10px";
@@ -89,7 +88,6 @@ document.addEventListener("DOMContentLoaded", () => {
       emojis.forEach((emoji) => {
         const emojiItem = document.createElement("div");
         emojiItem.className = "emoji-item";
-        // 设置样式以保持原有的布局
         emojiItem.style.width = "150px";
         emojiItem.style.height = "150px";
         emojiItem.style.backgroundSize = "contain";
@@ -98,7 +96,18 @@ document.addEventListener("DOMContentLoaded", () => {
         emojiItem.style.cursor = "pointer";
         emojiItem.style.border = "1px solid #ddd";
         emojiItem.style.borderRadius = "4px";
-        emojiItem.style.flexShrink = "0"; // 防止项目被压缩
+        emojiItem.style.flexShrink = "0";
+        emojiItem.style.position = "relative";
+
+        // 添加删除按钮
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "delete-btn";
+        deleteBtn.innerHTML = "×";
+        deleteBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteEmoji(category, emoji);
+        };
+        emojiItem.appendChild(deleteBtn);
 
         // 使用 data-bg 存储图片URL
         emojiItem.setAttribute("data-bg", `/memes/${category}/${emoji}`);
