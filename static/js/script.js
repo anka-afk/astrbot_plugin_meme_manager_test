@@ -47,19 +47,6 @@ document.addEventListener("DOMContentLoaded", () => {
     container.innerHTML = "";
 
     Object.entries(emojiData).forEach(([category, emojis]) => {
-      // 移除调试信息
-      // console.log(`类别: ${category}, 表情包:`, emojis); // 添加调试信息
-
-      // 移除检查逻辑
-      // 确保 emojis 是一个数组
-      // if (!Array.isArray(emojis)) {
-      //     console.error(`类别 "${category}" 的表情包数据格式不正确`);
-      //     emojis = []; // 如果不是数组，设置为一个空数组
-      // } else if (typeof emojis === "string") {
-      //     console.error(`类别 "${category}" 的表情包数据格式不正确，实际为字符串`);
-      //     emojis = []; // 如果是字符串，设置为一个空数组
-      // }
-
       const categoryDiv = document.createElement("div");
       categoryDiv.className = "category";
       categoryDiv.id = `category-${category}`;
