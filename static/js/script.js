@@ -375,6 +375,46 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       statusDiv.innerHTML = statusHtml;
+
+      // 添加图床同步状态显示
+      const imgSyncResponse = await fetch("/api/sync/status");
+      if (imgSyncResponse.ok) {
+        const imgSyncData = await imgSyncResponse.json();
+        // 这里可以根据 imgSyncData 的内容更新图床同步状态
+        // 假设 imgSyncData 包含需要上传和下载的文件信息
+        const { to_upload, to_download } = imgSyncData; // 需要根据实际返回的数据结构调整
+
+        let syncStatusHtml = "<h4>图床同步状态：</h4>";
+        if (to_upload.length > 0) {
+          syncStatusHtml += `
+            <div>
+              <h5>待上传文件：</h5>
+              <ul>
+                ${to_upload.map((file) => `<li>${file.filename}</li>`).join("")}
+              </ul>
+            </div>
+          `;
+        }
+
+        if (to_download.length > 0) {
+          syncStatusHtml += `
+            <div>
+              <h5>待下载文件：</h5>
+              <ul>
+                ${to_download
+                  .map((file) => `<li>${file.filename}</li>`)
+                  .join("")}
+              </ul>
+            </div>
+          `;
+        }
+
+        if (!to_upload.length && !to_download.length) {
+          syncStatusHtml += "<p>图床同步状态正常，无需上传或下载文件。</p>";
+        }
+
+        statusDiv.innerHTML += syncStatusHtml;
+      }
     } catch (error) {
       console.error("检查同步状态失败:", error);
       statusDiv.innerHTML = `
