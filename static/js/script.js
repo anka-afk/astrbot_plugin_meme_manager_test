@@ -47,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     container.innerHTML = "";
 
     Object.entries(emojiData).forEach(([category, emojis]) => {
+      // 确保 emojis 是一个数组
       if (!Array.isArray(emojis)) {
         console.error(`类别 "${category}" 的表情包数据格式不正确`);
         return;

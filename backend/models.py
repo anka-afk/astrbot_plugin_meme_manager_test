@@ -16,7 +16,7 @@ def scan_emoji_folder():
                 for f in os.listdir(category_path)
                 if f.lower().endswith((".png", ".jpg", ".jpeg", ".gif"))
             ]
-            emoji_data[category] = emoji_files
+            emoji_data[category] = emoji_files  # 将表情包数组赋值给类别
     return emoji_data
 
 
