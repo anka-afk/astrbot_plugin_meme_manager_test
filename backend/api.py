@@ -201,7 +201,7 @@ def update_category_description():
         astr_config["category_descriptions"] = descriptions
         
         # 保存配置
-        astr_config.save_config()
+        astr_config.save_config()  # 确保调用 save_config
         
         return jsonify({"message": "Category description updated successfully"}), 200
     except Exception as e:
@@ -298,7 +298,7 @@ def rename_category():
             description = descriptions.pop(old_name)
             descriptions[new_name] = description
             astr_config["category_descriptions"] = descriptions
-            astr_config.save_config()
+            astr_config.save_config()  # 确保调用 save_config
 
         return jsonify({"message": "Category renamed successfully"}), 200
     except Exception as e:
@@ -313,19 +313,26 @@ def sync_config_internal():
     if not astr_config:
         raise ValueError("未找到配置对象")
 
+    # 获取表情包文件夹下的所有目录
+    memes_dir = current_app.config["MEMES_DIR"]
+    local_categories = set(
+        d for d in os.listdir(memes_dir) 
+        if os.path.isdir(os.path.join(memes_dir, d))
+    )
+    
     # 获取当前配置
-    tag_descriptions = astr_config.get("category_descriptions", {})
+    descriptions = astr_config.get("category_descriptions", {})
     changed = False
     
-    # 添加调试日志
-    print("[DEBUG] sync_config_internal 开始时 angry 的描述:", 
-          tag_descriptions.get("angry", "未找到"))
+    # 仅为新类别生成默认描述
+    for category in local_categories:
+        if category not in descriptions:
+            descriptions[category] = f"请添加描述"
+            changed = True
     
     # 只有在有变化时才保存配置
     if changed:
-        astr_config["category_descriptions"] = tag_descriptions
-        astr_config.save_config()
-        print("[DEBUG] sync_config_internal 保存后 angry 的描述:", 
-              tag_descriptions.get("angry", "未找到"))
+        astr_config["category_descriptions"] = descriptions
+        astr_config.save_config()  # 确保调用 save_config
 
 
