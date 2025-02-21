@@ -6,7 +6,6 @@ from .models import (
     delete_emoji_from_category,
 )
 import os
-import shutil
 import traceback
 from ..config import MEMES_DIR
 
@@ -50,7 +49,11 @@ def add_emoji():
         result_path = add_emoji_to_category(category, image_file)
         
         # 添加成功后同步配置
-        sync_config()
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        category_manager = plugin_config.get("category_manager")
+        if category_manager:
+            category_manager.sync_with_filesystem()
+            
         return jsonify({"message": "Emoji added successfully", "path": result_path}), 201
     except Exception as e:
         return jsonify({"message": f"添加表情包失败: {str(e)}"}), 500
@@ -185,60 +188,40 @@ def update_category_description():
 
 @api.route("/category/restore", methods=["POST"])
 def restore_category():
-    """恢复已删除的类别"""
+    """恢复或创建新类别
+    
+    请求体格式:
+    {
+        "category": "类别名称",
+        "description": "类别描述"  # 可选，默认为"请添加描述"
+    }
+    """
     try:
         data = request.get_json()
         category = data.get("category")
+        description = data.get("description", "请添加描述")
+        
         if not category:
             return jsonify({"message": "Category is required"}), 400
 
-        # 获取配置
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        astr_config = plugin_config.get("astr_config")
-        if not astr_config:
-            return jsonify({"message": "Config not found"}), 404
+        category_manager = plugin_config.get("category_manager")
+        
+        if not category_manager:
+            return jsonify({"message": "Category manager not found"}), 404
 
         # 创建类别目录
-        category_path = os.path.join(current_app.config["MEMES_DIR"], category)
+        category_path = os.path.join(MEMES_DIR, category)
         os.makedirs(category_path, exist_ok=True)
 
-        # 确保配置中有该类别
-        descriptions = astr_config.get("category_descriptions", {})
-        if category not in descriptions:
-            descriptions[category] = "请添加描述"
-            astr_config["category_descriptions"] = descriptions
-            astr_config.save_config()
+        # 更新类别描述
+        if category_manager.update_description(category, description):
+            return jsonify({"message": "Category created successfully"}), 200
+        else:
+            return jsonify({"message": "Failed to create category"}), 500
 
-        return jsonify({"message": "Category restored successfully"}), 200
     except Exception as e:
-        return jsonify({"message": f"Failed to restore category: {str(e)}"}), 500
-
-
-@api.route("/category/remove_from_config", methods=["POST"])
-def remove_from_config():
-    """从配置中删除类别"""
-    try:
-        data = request.get_json()
-        category = data.get("category")
-        if not category:
-            return jsonify({"message": "Category is required"}), 400
-
-        # 获取配置
-        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        astr_config = plugin_config.get("astr_config")
-        if not astr_config:
-            return jsonify({"message": "Config not found"}), 404
-
-        # 从配置中删除类别
-        category_descriptions = astr_config.get("category_descriptions", {})
-        if category in category_descriptions:
-            del category_descriptions[category]
-            astr_config["category_descriptions"] = category_descriptions
-            astr_config.save_config()
-
-        return jsonify({"message": "Category removed from config successfully"}), 200
-    except Exception as e:
-        return jsonify({"message": f"Failed to remove category from config: {str(e)}"}), 500
+        return jsonify({"message": f"Failed to create category: {str(e)}"}), 500
 
 
 @api.route("/category/rename", methods=["POST"])
@@ -263,36 +246,5 @@ def rename_category():
             return jsonify({"message": "Failed to rename category"}), 500
     except Exception as e:
         return jsonify({"message": f"Failed to rename category: {str(e)}"}), 500
-
-
-def sync_config_internal():
-    """同步配置与文件夹结构的内部函数"""
-    plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-    astr_config = plugin_config.get("astr_config")
-    
-    if not astr_config:
-        raise ValueError("未找到配置对象")
-
-    # 获取表情包文件夹下的所有目录
-    memes_dir = current_app.config["MEMES_DIR"]
-    local_categories = set(
-        d for d in os.listdir(memes_dir) 
-        if os.path.isdir(os.path.join(memes_dir, d))
-    )
-    
-    # 获取当前配置
-    descriptions = astr_config.get("category_descriptions", {})
-    changed = False
-    
-    # 仅为新类别生成默认描述
-    for category in local_categories:
-        if category not in descriptions:
-            descriptions[category] = f"请添加描述"
-            changed = True
-    
-    # 只有在有变化时才保存配置
-    if changed:
-        astr_config["category_descriptions"] = descriptions
-        astr_config.save_config()  # 确保调用 save_config
 
 
