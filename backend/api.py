@@ -276,7 +276,7 @@ def sync_to_remote():
             return jsonify({"message": "图床服务未配置"}), 400
             
         # 启动同步进程，但不等待完成
-        img_sync.sync_process = img_sync._start_sync_process('upload')
+        img_sync.upload_to_remote()  # 直接调用上传方法
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"message": str(e)}), 500
@@ -292,7 +292,7 @@ def sync_from_remote():
             return jsonify({"message": "图床服务未配置"}), 400
             
         # 启动同步进程，但不等待完成
-        img_sync.sync_process = img_sync._start_sync_process('download')
+        img_sync.download_to_local()  # 直接调用下载方法
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"message": str(e)}), 500
