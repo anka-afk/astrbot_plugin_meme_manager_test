@@ -54,6 +54,8 @@ class MemeSender(Star):
                     },
                     local_dir=MEMES_DIR
                 )
+            else:
+                self.logger.error("图床服务配置不完整，缺少 key 或 secret")
 
         # 用于存储服务器进程
         self.server_process = None

@@ -580,4 +580,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 在 DOMContentLoaded 事件中调用 loadCategories
   loadCategories(); // 页面加载时获取类别
+
+  // 在页面加载时自动检查同步状态
+  checkSyncStatus();
+
+  // 添加事件监听器
+  document
+    .getElementById("check-sync-btn")
+    .addEventListener("click", checkSyncStatus);
 });

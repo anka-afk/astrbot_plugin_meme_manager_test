@@ -56,8 +56,12 @@ class ImageSync:
 
     def _initialize_provider(self, config):
         # 初始化图床提供者
-        # 这里需要根据你的图床服务实现相应的提供者
-        pass
+        if config.get("key") and config.get("secret"):
+            # 假设你有一个名为 StarDotsProvider 的提供者
+            return StarDotsProvider(config)
+        else:
+            logger.error("图床服务配置不完整，缺少 key 或 secret")
+            return None
 
     def check_status(self) -> Dict[str, List[Dict[str, str]]]:
         """
