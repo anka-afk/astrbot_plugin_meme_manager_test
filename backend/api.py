@@ -245,3 +245,54 @@ def rename_category():
         return jsonify({"message": f"Failed to rename category: {str(e)}"}), 500
 
 
+@api.route("/sync/upload", methods=["POST"])
+def sync_to_remote():
+    """同步到云端"""
+    try:
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        img_sync = plugin_config.get("img_sync")
+        if not img_sync:
+            return jsonify({"message": "图床服务未配置"}), 400
+            
+        # 启动同步进程，但不等待完成
+        img_sync.sync_process = img_sync._start_sync_process('upload')
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+
+@api.route("/sync/download", methods=["POST"]) 
+def sync_from_remote():
+    """从云端同步"""
+    try:
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        img_sync = plugin_config.get("img_sync")
+        if not img_sync:
+            return jsonify({"message": "图床服务未配置"}), 400
+            
+        # 启动同步进程，但不等待完成
+        img_sync.sync_process = img_sync._start_sync_process('download')
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+
+@api.route("/sync/check_process", methods=["GET"])
+def check_sync_process():
+    """检查同步进程状态"""
+    try:
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        img_sync = plugin_config.get("img_sync")
+        if not img_sync or not img_sync.sync_process:
+            return jsonify({"completed": True, "success": True})
+            
+        if not img_sync.sync_process.is_alive():
+            success = img_sync.sync_process.exitcode == 0
+            img_sync.sync_process = None
+            return jsonify({"completed": True, "success": success})
+            
+        return jsonify({"completed": False})
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+

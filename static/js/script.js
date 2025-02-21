@@ -404,104 +404,71 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // 添加同步到云端的函数
   async function syncToRemote() {
     try {
-      const btn = document.getElementById("upload-sync-btn");
-      btn.disabled = true;
-      btn.textContent = "同步中...";
-
-      const response = await fetch("/api/sync/upload", { method: "POST" });
-      if (!response.ok) throw new Error("同步到云端失败");
-
-      // 开始轮询检查进度
-      while (true) {
-        const statusResponse = await fetch("/api/sync/check_process");
-        if (!statusResponse.ok) throw new Error("检查同步状态失败");
-        const status = await statusResponse.json();
-
-        if (status.completed) {
-          if (status.success) {
-            alert("同步到云端完成！");
-            await checkSyncStatus(); // 刷新同步状态
-          } else {
-            throw new Error("同步失败");
-          }
-          break;
-        }
-
-        // 等待1秒后再次检查
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch("/api/sync/upload", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(`同步到云端失败: ${data.message}`);
+        return;
       }
+      alert("正在同步到云端...");
+      checkSyncStatus(); // 检查同步状态
     } catch (error) {
       console.error("同步到云端失败:", error);
       alert("同步到云端失败: " + error.message);
-    } finally {
-      const btn = document.getElementById("upload-sync-btn");
-      btn.disabled = false;
-      btn.textContent = "同步到云端";
     }
   }
 
+  // 添加从云端同步的函数
   async function syncFromRemote() {
     try {
-      const btn = document.getElementById("download-sync-btn");
-      btn.disabled = true;
-      btn.textContent = "同步中...";
-
-      const response = await fetch("/api/sync/download", { method: "POST" });
-      if (!response.ok) throw new Error("从云端同步失败");
-
-      // 开始轮询检查进度
-      while (true) {
-        const statusResponse = await fetch("/api/sync/check_process");
-        if (!statusResponse.ok) throw new Error("检查同步状态失败");
-        const status = await statusResponse.json();
-
-        if (status.completed) {
-          if (status.success) {
-            alert("从云端同步完成！");
-            await checkSyncStatus(); // 刷新同步状态
-            await fetchEmojis(); // 刷新表情包列表
-          } else {
-            throw new Error("同步失败");
-          }
-          break;
-        }
-
-        // 等待1秒后再次检查
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch("/api/sync/download", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(`从云端同步失败: ${data.message}`);
+        return;
       }
+      alert("正在从云端同步...");
+      checkSyncStatus(); // 检查同步状态
     } catch (error) {
       console.error("从云端同步失败:", error);
       alert("从云端同步失败: " + error.message);
-    } finally {
-      const btn = document.getElementById("download-sync-btn");
-      btn.disabled = false;
-      btn.textContent = "从云端同步";
     }
   }
 
-  // 添加同步按钮的事件监听器
-  document
-    .getElementById("manual-sync-btn")
-    ?.addEventListener("click", async () => {
-      try {
-        await syncConfig();
-        await checkSyncStatus(); // 同步后检查状态
-      } catch (error) {
-        console.error("手动同步失败:", error);
+  // 检查同步进程状态的函数
+  async function checkSyncStatus() {
+    try {
+      const response = await fetch("/api/sync/check_process");
+      const data = await response.json();
+      if (data.completed) {
+        if (data.success) {
+          alert("同步完成！");
+        } else {
+          alert("同步失败，请检查日志。");
+        }
+      } else {
+        alert("同步进行中，请稍候...");
       }
-    });
+    } catch (error) {
+      console.error("检查同步状态失败:", error);
+      alert("检查同步状态失败: " + error.message);
+    }
+  }
 
-  document
-    .getElementById("check-sync-btn")
-    ?.addEventListener("click", checkSyncStatus);
+  // 添加事件监听器
   document
     .getElementById("upload-sync-btn")
-    ?.addEventListener("click", syncToRemote);
+    .addEventListener("click", syncToRemote);
   document
     .getElementById("download-sync-btn")
-    ?.addEventListener("click", syncFromRemote);
+    .addEventListener("click", syncFromRemote);
 
   // 初始检查一次同步状态
   checkSyncStatus();
