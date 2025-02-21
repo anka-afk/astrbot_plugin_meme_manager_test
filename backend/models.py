@@ -1,32 +1,15 @@
 import os
 from werkzeug.utils import secure_filename
-from flask import current_app
-
-
-def get_base_dir():
-    # 优先尝试从配置中获取 MEMES_DIR
-    MEMES_DIR = current_app.config.get("MEMES_DIR", None)
-    if MEMES_DIR:
-        return MEMES_DIR
-
-    # 如果未在配置中找到，则回退到原来的计算逻辑
-    plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-    memes_path = plugin_config.get("memes_path", "memes")
-    plugin_dir = os.path.dirname(os.path.abspath(__file__))
-    if not os.path.isabs(memes_path):
-        base_dir = os.path.abspath(os.path.join(plugin_dir, memes_path))
-    else:
-        base_dir = memes_path
-    return base_dir
+from ..config import MEMES_DIR
 
 
 def scan_emoji_folder():
-    base_dir = get_base_dir()
+    """扫描表情包文件夹，返回所有类别及其表情包"""
     emoji_data = {}
-    if not os.path.exists(base_dir):
-        os.makedirs(base_dir)
-    for category in os.listdir(base_dir):
-        category_path = os.path.join(base_dir, category)
+    if not os.path.exists(MEMES_DIR):
+        os.makedirs(MEMES_DIR)
+    for category in os.listdir(MEMES_DIR):
+        category_path = os.path.join(MEMES_DIR, category)
         if os.path.isdir(category_path):
             emoji_files = [
                 f
@@ -37,9 +20,9 @@ def scan_emoji_folder():
     return emoji_data
 
 
-# 获取指定类别下的所有表情包
 def get_emoji_by_category(category):
-    category_path = os.path.join(get_base_dir(), category)
+    """获取指定类别下的所有表情包"""
+    category_path = os.path.join(MEMES_DIR, category)
     if not os.path.isdir(category_path):
         return None
     emoji_files = [
@@ -50,9 +33,9 @@ def get_emoji_by_category(category):
     return emoji_files
 
 
-# 添加表情包到指定类别
 def add_emoji_to_category(category, image_file):
-    category_path = os.path.join(get_base_dir(), category)
+    """添加表情包到指定类别"""
+    category_path = os.path.join(MEMES_DIR, category)
 
     if not os.path.exists(category_path):
         os.makedirs(category_path)
@@ -63,9 +46,9 @@ def add_emoji_to_category(category, image_file):
     return target_path
 
 
-# 删除指定类别下的表情包
 def delete_emoji_from_category(category, image_file):
-    category_path = os.path.join(get_base_dir(), category)
+    """删除指定类别下的表情包"""
+    category_path = os.path.join(MEMES_DIR, category)
 
     if not os.path.isdir(category_path):
         return False
@@ -76,9 +59,9 @@ def delete_emoji_from_category(category, image_file):
     return False
 
 
-# 更新（替换）表情包文件
 def update_emoji_in_category(category, old_image_file, new_image_file):
-    category_path = os.path.join(get_base_dir(), category)
+    """更新（替换）表情包文件"""
+    category_path = os.path.join(MEMES_DIR, category)
 
     if not os.path.isdir(category_path):
         return False
