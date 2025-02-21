@@ -143,7 +143,8 @@ def get_sync_status():
         if not astr_config:
             raise ValueError("未找到配置对象")
             
-        config_categories = set(astr_config.get("tag_descriptions", {}).keys())
+        # 这里修改为 category_descriptions
+        config_categories = set(astr_config.get("category_descriptions", {}).keys())
         
         # 比较差异
         missing_in_config = list(local_categories - config_categories)  # 本地有但配置没有
