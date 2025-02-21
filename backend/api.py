@@ -83,13 +83,13 @@ def get_emotions():
             raise ValueError("未找到配置对象")
         
         # 直接从 astr_config 对象获取描述
-        tag_descriptions = astr_config.get("category_descriptions", {})
+        category_descriptions = astr_config.get("category_descriptions", {})
         
         # 添加简短的调试日志
-        angry_desc = tag_descriptions.get("angry", "未找到")
+        angry_desc = category_descriptions.get("angry", "未找到")
         current_app.logger.debug(f"[DEBUG] /emotions API - angry 的描述: {angry_desc}")
         
-        return jsonify(tag_descriptions)
+        return jsonify(category_descriptions)
     except Exception as e:
         current_app.logger.error(f"获取标签描述失败: {str(e)}")
         current_app.logger.error(f"错误详情: {traceback.format_exc()}")
@@ -256,10 +256,10 @@ def remove_from_config():
             return jsonify({"message": "Config not found"}), 404
 
         # 从配置中删除类别
-        tag_descriptions = astr_config.get("tag_descriptions", {})
-        if category in tag_descriptions:
-            del tag_descriptions[category]
-            astr_config["tag_descriptions"] = tag_descriptions
+        category_descriptions = astr_config.get("category_descriptions", {})
+        if category in category_descriptions:
+            del category_descriptions[category]
+            astr_config["category_descriptions"] = category_descriptions
             astr_config.save_config()
 
         return jsonify({"message": "Category removed from config successfully"}), 200

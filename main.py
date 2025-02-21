@@ -37,11 +37,11 @@ class MemeSender(Star):
               self.astr_config.get("category_descriptions", {}).get("angry", "未找到"))
         
         # 加载配置
-        self.tag_descriptions = self.astr_config.get("category_descriptions", {})
+        self.category_descriptions = self.astr_config.get("category_descriptions", {})
         
         # 设置默认配置
-        if not self.tag_descriptions:  # 如果配置为空，使用默认值
-            self.tag_descriptions = {
+        if not self.category_descriptions:  # 如果配置为空，使用默认值
+            self.category_descriptions = {
                 "angry": "表达愤怒或不满的场景",
                 "happy": "表达开心或愉悦的场景",
                 "sad": "表达悲伤或遗憾的场景",
@@ -64,7 +64,7 @@ class MemeSender(Star):
                 "sigh": "表达叹息的场景"
             }
             # 保存到配置
-            self.astr_config["category_descriptions"] = self.tag_descriptions
+            self.astr_config["category_descriptions"] = self.category_descriptions
             self.astr_config.save_config()
         
         self.image_host = self.config.get("image_host", "stardots")
@@ -114,8 +114,8 @@ class MemeSender(Star):
 
         try:
             # 检查配置中 angry 的描述
-            tag_descriptions = self.astr_config.get("category_descriptions", {})
-            angry_desc = tag_descriptions.get("angry", "未找到")
+            category_descriptions = self.astr_config.get("category_descriptions", {})
+            angry_desc = category_descriptions.get("angry", "未找到")
             print(f"[DEBUG] angry 的描述: {angry_desc}")  # 检查 angry 的描述
             
             server_key, server_process = start_server({
@@ -156,7 +156,7 @@ class MemeSender(Star):
         """查看所有可用表情包类别"""
         categories = "\n".join([
             f"- {tag}: {desc}" 
-            for tag, desc in self.tag_descriptions.items()
+            for tag, desc in self.category_descriptions.items()
         ])
         yield event.plain_result(f"当前支持的表情包类别：\n{categories}")
 
@@ -169,7 +169,7 @@ class MemeSender(Star):
             )
             return
 
-        if category not in self.tag_descriptions:
+        if category not in self.category_descriptions:
             yield event.plain_result(
                 f"无效的表情包类别：{category}\n使用/查看表情包查看可用类别"
             )
@@ -202,7 +202,7 @@ class MemeSender(Star):
             return
 
         category_cn = upload_state["category"]
-        category_en = self.tag_descriptions[category_cn]
+        category_en = self.category_descriptions[category_cn]
         save_dir = os.path.join(self.meme_path, category_en)
 
         try:
@@ -279,7 +279,7 @@ class MemeSender(Star):
         config_path = os.path.join(self.meme_path, "emotions.json")
         if os.path.exists(config_path):
             with open(config_path, "r", encoding="utf-8") as f:
-                self.tag_descriptions.update(json.load(f))
+                self.category_descriptions.update(json.load(f))
 
     def _check_meme_directories(self):
         """检查表情包目录是否存在并且包含图片"""
@@ -288,7 +288,7 @@ class MemeSender(Star):
             self.logger.error(f"表情包根目录不存在: {self.meme_path}")
             return
 
-        for emotion in self.tag_descriptions.values():
+        for emotion in self.category_descriptions.values():
             emotion_path = os.path.join(self.meme_path, emotion)
             if not os.path.exists(emotion_path):
                 self.logger.error(f"表情目录不存在: {emotion_path}")
@@ -327,7 +327,7 @@ class MemeSender(Star):
             matches = re.finditer(pattern, text)
             for match in matches:
                 emotion = match.group(1)
-                if emotion in self.tag_descriptions:
+                if emotion in self.category_descriptions:
                     self.found_emotions.append(emotion)
                     clean_text = clean_text.replace(match.group(0), "")
 
@@ -382,7 +382,7 @@ class MemeSender(Star):
 
         try:
             for emotion in self.found_emotions:
-                emotion_en = self.tag_descriptions.get(emotion)
+                emotion_en = self.category_descriptions.get(emotion)
                 if not emotion_en:
                     continue
 
@@ -499,7 +499,7 @@ class MemeSender(Star):
         """处理消息，直接匹配英文标签"""
         message = event.message.strip()
         # 直接查找对应的英文标签
-        if message in self.tag_descriptions:
+        if message in self.category_descriptions:
             # 使用英文标签查找表情包
             await self.send_random_emoji(event, message)
             return True
