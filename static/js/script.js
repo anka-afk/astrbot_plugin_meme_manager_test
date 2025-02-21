@@ -47,6 +47,11 @@ document.addEventListener("DOMContentLoaded", () => {
     container.innerHTML = "";
 
     Object.entries(emojiData).forEach(([category, emojis]) => {
+      if (!Array.isArray(emojis)) {
+        console.error(`类别 "${category}" 的表情包数据格式不正确`);
+        return;
+      }
+
       const categoryDiv = document.createElement("div");
       categoryDiv.className = "category";
       categoryDiv.id = `category-${category}`;
@@ -636,6 +641,12 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error("无法加载类别数据");
       }
       const data = await response.json();
+
+      // 确保 data 是一个对象
+      if (typeof data !== "object" || Array.isArray(data)) {
+        throw new Error("返回的数据格式不正确");
+      }
+
       updateSidebar(data, data); // 假设 data 也包含描述
       displayCategories(data, data); // 更新类别显示
     } catch (error) {
