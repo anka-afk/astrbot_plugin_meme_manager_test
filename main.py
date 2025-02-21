@@ -21,9 +21,10 @@ from astrbot.core.message.message_event_result import MessageChain
 from .webui import start_server, shutdown_server
 from .utils import get_public_ip
 from .image_host.img_sync import ImageSync
-from .config import MEMES_DIR
+from .config import MEMES_DIR, load_config
 from .category_manager import CategoryManager
 from .init import init_plugin
+from flask import Flask
 
 
 @register(
@@ -483,3 +484,16 @@ class MemeSender(Star):
         except Exception as e:
             self.logger.error(f"发送表情包失败: {str(e)}")
             yield event.plain_result(f"发送表情包失败: {str(e)}")
+
+def create_app():
+    app = Flask(__name__)
+
+    # 加载配置
+    config = load_config()
+    app.config["PLUGIN_CONFIG"] = {
+        "img_sync": config.get("img_sync"),  # 确保这里有正确的配置
+        "category_manager": config.get("category_manager"),
+        "webui_port": config.get("webui_port", 5000)
+    }
+
+    return app
