@@ -59,6 +59,11 @@ class MemeSender(Star):
         self.server_process = None
         self.server_key = None
 
+        # 初始化表情状态
+        self.found_emotions = []  # 存储找到的表情
+        self.upload_states = {}   # 存储上传状态：{user_session: {"category": str, "expire_time": float}}
+        self.pending_images = {}  # 存储待发送的图片
+
     @filter.command("启动表情包管理服务器")
     async def start_webui(self, event: AstrMessageEvent):
         """启动表情包管理服务器的指令，返回访问地址和当前秘钥"""
