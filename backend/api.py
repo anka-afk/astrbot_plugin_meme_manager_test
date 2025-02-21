@@ -122,33 +122,35 @@ def delete_category():
 def get_sync_status():
     """获取同步状态"""
     try:
+        # 获取表情包文件夹下的所有目录
+        memes_dir = current_app.config["MEMES_DIR"]
+        categories = set(
+            d for d in os.listdir(memes_dir) 
+            if os.path.isdir(os.path.join(memes_dir, d))
+        )
+        
+        # 获取配置中的类别
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        img_sync = plugin_config.get("img_sync")
-        if not img_sync:
-            return jsonify({
-                "error": "配置错误",
-                "detail": "图床服务未配置",
-                "config": str(plugin_config)
-            }), 400
-            
-        try:
-            # 添加超时处理
-            status = img_sync.check_status()
-            return jsonify(status)
-        except Exception as e:
-            import traceback
-            return jsonify({
-                "error": "同步状态检查失败",
-                "detail": str(e),
-                "traceback": traceback.format_exc()
-            }), 500
-            
-    except Exception as e:
-        import traceback
+        config = plugin_config.get("config")
+        tag_descriptions = config.get("tag_descriptions", {}) if config else {}
+        
+        # 比较差异
+        config_categories = set(tag_descriptions.keys())
+        to_add = list(categories - config_categories)
+        to_remove = list(config_categories - categories)
+        
         return jsonify({
-            "error": "服务器错误",
-            "detail": str(e),
-            "traceback": traceback.format_exc()
+            "status": "ok",
+            "differences": {
+                "to_add": to_add,
+                "to_remove": to_remove
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "detail": traceback.format_exc()
         }), 500
 
 
@@ -156,17 +158,11 @@ def get_sync_status():
 def sync_config():
     """同步配置与文件夹结构的 API 端点"""
     try:
-        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        category_manager = plugin_config.get("category_manager")
-        
-        if not category_manager:
-            raise ValueError("未找到类别管理器")
-            
-        if category_manager.sync_with_filesystem():
-            return jsonify({"message": "配置同步成功"}), 200
-        else:
-            return jsonify({"message": "配置同步失败"}), 500
+        sync_config_internal()
+        return jsonify({"message": "配置同步成功"}), 200
     except Exception as e:
+        current_app.logger.error(f"同步配置失败: {str(e)}")
+        current_app.logger.error(f"错误详情: {traceback.format_exc()}")
         return jsonify({
             "message": f"配置同步失败: {str(e)}",
             "detail": traceback.format_exc()
@@ -183,16 +179,21 @@ def update_category_description():
         if not category or not description:
             return jsonify({"message": "Category and description are required"}), 400
 
+        # 获取配置
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        category_manager = plugin_config.get("category_manager")
-        
-        if not category_manager:
-            return jsonify({"message": "Category manager not found"}), 404
+        config = plugin_config.get("config")
+        if not config:
+            return jsonify({"message": "Config not found"}), 404
             
-        if category_manager.update_description(category, description):
-            return jsonify({"message": "Category description updated successfully"}), 200
-        else:
-            return jsonify({"message": "Failed to update category description"}), 500
+        # 更新描述
+        tag_descriptions = config.get("tag_descriptions", {})
+        tag_descriptions[category] = description
+        config["tag_descriptions"] = tag_descriptions
+        
+        # 保存配置
+        config.save_config()
+        
+        return jsonify({"message": "Category description updated successfully"}), 200
     except Exception as e:
         return jsonify({"message": f"Failed to update category description: {str(e)}"}), 500
 
@@ -301,5 +302,38 @@ def check_sync_process():
         return jsonify({"completed": False})
     except Exception as e:
         return jsonify({"message": str(e)}), 500
+
+
+def sync_config_internal():
+    """同步配置与文件夹结构的内部函数"""
+    # 获取配置对象
+    plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+    config = plugin_config.get("config")
+    if not config:
+        raise ValueError("未找到配置对象")
+
+    # 获取表情包文件夹下的所有目录
+    memes_dir = current_app.config["MEMES_DIR"]
+    categories = set(
+        d for d in os.listdir(memes_dir) 
+        if os.path.isdir(os.path.join(memes_dir, d))
+    )
+    
+    # 更新标签描述
+    tag_descriptions = config.get("tag_descriptions", {}).copy()
+    
+    # 删除不存在的类别
+    for tag in list(tag_descriptions.keys()):
+        if tag not in categories:
+            del tag_descriptions[tag]
+    
+    # 添加新类别
+    for category in categories:
+        if category not in tag_descriptions:
+            tag_descriptions[category] = f"表达{category}的场景"
+    
+    # 更新并保存配置
+    config["tag_descriptions"] = tag_descriptions
+    config.save_config()
 
 
