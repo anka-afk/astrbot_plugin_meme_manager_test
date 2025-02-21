@@ -250,7 +250,12 @@ def rename_category():
 def sync_upload():
     """同步本地文件到云端"""
     try:
-        sync = ImageSync(config=current_app.config["PLUGIN_CONFIG"]["img_sync"], local_dir=MEMES_DIR)
+        # 调试信息
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        if "img_sync" not in plugin_config:
+            return jsonify({"message": "配置中缺少 img_sync"}), 500
+        
+        sync = ImageSync(config=plugin_config["img_sync"], local_dir=MEMES_DIR)
         success = sync.upload_to_remote()
         if success:
             return jsonify({"message": "上传成功"}), 200
@@ -264,7 +269,12 @@ def sync_upload():
 def sync_download():
     """从云端下载文件到本地"""
     try:
-        sync = ImageSync(config=current_app.config["PLUGIN_CONFIG"]["img_sync"], local_dir=MEMES_DIR)
+        # 调试信息
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        if "img_sync" not in plugin_config:
+            return jsonify({"message": "配置中缺少 img_sync"}), 500
+        
+        sync = ImageSync(config=plugin_config["img_sync"], local_dir=MEMES_DIR)
         success = sync.download_to_local()
         if success:
             return jsonify({"message": "下载成功"}), 200
