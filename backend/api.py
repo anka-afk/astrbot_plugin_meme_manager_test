@@ -30,7 +30,7 @@ def get_emojis_by_category(category):
     emojis = get_emoji_by_category(category)
     if emojis is None:
         return jsonify({"message": "Category not found"}), 404
-    return jsonify(emojis)
+    return jsonify(emojis if isinstance(emojis, list) else []), 200  # 确保返回数组
 
 
 @api.route("/emoji/add", methods=["POST"])

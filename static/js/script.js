@@ -85,34 +85,37 @@ document.addEventListener("DOMContentLoaded", () => {
       emojiGrid.style.gap = "10px";
       emojiGrid.style.padding = "10px";
 
-      emojis.forEach((emoji) => {
-        const emojiItem = document.createElement("div");
-        emojiItem.className = "emoji-item";
-        emojiItem.style.width = "150px";
-        emojiItem.style.height = "150px";
-        emojiItem.style.backgroundSize = "contain";
-        emojiItem.style.backgroundPosition = "center";
-        emojiItem.style.backgroundRepeat = "no-repeat";
-        emojiItem.style.cursor = "pointer";
-        emojiItem.style.border = "1px solid #ddd";
-        emojiItem.style.borderRadius = "4px";
-        emojiItem.style.flexShrink = "0";
-        emojiItem.style.position = "relative";
+      // 确保 emojis 是数组
+      if (Array.isArray(emojis)) {
+        emojis.forEach((emoji) => {
+          const emojiItem = document.createElement("div");
+          emojiItem.className = "emoji-item";
+          emojiItem.style.width = "150px";
+          emojiItem.style.height = "150px";
+          emojiItem.style.backgroundSize = "contain";
+          emojiItem.style.backgroundPosition = "center";
+          emojiItem.style.backgroundRepeat = "no-repeat";
+          emojiItem.style.cursor = "pointer";
+          emojiItem.style.border = "1px solid #ddd";
+          emojiItem.style.borderRadius = "4px";
+          emojiItem.style.flexShrink = "0";
+          emojiItem.style.position = "relative";
 
-        // 添加删除按钮
-        const deleteBtn = document.createElement("button");
-        deleteBtn.className = "delete-btn";
-        deleteBtn.innerHTML = "×";
-        deleteBtn.onclick = (e) => {
-          e.stopPropagation();
-          deleteEmoji(category, emoji);
-        };
-        emojiItem.appendChild(deleteBtn);
+          // 添加删除按钮
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "delete-btn";
+          deleteBtn.innerHTML = "×";
+          deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteEmoji(category, emoji);
+          };
+          emojiItem.appendChild(deleteBtn);
 
-        // 使用 data-bg 存储图片URL
-        emojiItem.setAttribute("data-bg", `/memes/${category}/${emoji}`);
-        emojiGrid.appendChild(emojiItem);
-      });
+          // 使用 data-bg 存储图片URL
+          emojiItem.setAttribute("data-bg", `/memes/${category}/${emoji}`);
+          emojiGrid.appendChild(emojiItem);
+        });
+      }
 
       categoryDiv.appendChild(emojiGrid);
       container.appendChild(categoryDiv);
