@@ -4,8 +4,6 @@ from .models import (
     get_emoji_by_category,
     add_emoji_to_category,
     delete_emoji_from_category,
-    update_emoji_in_category,
-    get_base_dir,
 )
 import os
 import shutil
