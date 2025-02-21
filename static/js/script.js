@@ -227,46 +227,55 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 添加分类
-  const addCategoryBtn = document.getElementById("add-category-btn");
-  if (addCategoryBtn && addCategoryForm) {
-    addCategoryBtn.addEventListener("click", () => {
-      addCategoryForm.style.display = "block";
+  // 添加分类相关的事件处理
+  document
+    .getElementById("add-category-btn")
+    .addEventListener("click", function () {
+      document.getElementById("add-category-form").style.display = "block";
+      this.style.display = "none";
     });
-  }
 
-  const saveCategoryBtn = document.getElementById("save-category-btn");
-  if (saveCategoryBtn) {
-    saveCategoryBtn.addEventListener("click", async () => {
-      const categoryInput = document.getElementById("new-category-english");
-      const categoryName = categoryInput?.value.trim();
+  document
+    .getElementById("save-category-btn")
+    .addEventListener("click", function () {
+      const categoryName = document.getElementById("new-category-name").value;
+      const categoryDesc =
+        document.getElementById("new-category-description").value ||
+        "请添加描述";
 
-      if (categoryName) {
-        try {
-          // 创建类别目录
-          const response = await fetch("/api/category/restore", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ category: categoryName }),
-          });
-
-          if (!response.ok) {
-            throw new Error("添加分类失败");
-          }
-
-          addCategoryForm.style.display = "none";
-          categoryInput.value = "";
-
-          // 重新加载数据
-          await fetchEmojis();
-          await checkSyncStatus();
-        } catch (error) {
-          console.error("添加分类失败", error);
-          alert("添加分类失败: " + error.message);
-        }
+      if (!categoryName) {
+        alert("请输入类别名称");
+        return;
       }
+
+      fetch("/api/category/restore", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          category: categoryName,
+          description: categoryDesc,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.message.includes("successfully")) {
+            alert("添加类别成功！");
+            document.getElementById("new-category-name").value = "";
+            document.getElementById("new-category-description").value = "";
+            document.getElementById("add-category-form").style.display = "none";
+            document.getElementById("add-category-btn").style.display = "block";
+            loadCategories(); // 重新加载类别列表
+          } else {
+            alert("添加类别失败：" + data.message);
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("添加类别失败：" + error);
+        });
     });
-  }
 
   // 添加编辑描述的处理函数
   function setupEditDescriptionHandlers() {
