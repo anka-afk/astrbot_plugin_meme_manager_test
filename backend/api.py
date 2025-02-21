@@ -5,6 +5,7 @@ from .models import (
     add_emoji_to_category,
     delete_emoji_from_category,
 )
+from ..image_host.img_sync import ImageSync  # 导入 ImageSync 类
 import os
 import traceback
 from ..config import MEMES_DIR
@@ -243,5 +244,33 @@ def rename_category():
             return jsonify({"message": "Failed to rename category"}), 500
     except Exception as e:
         return jsonify({"message": f"Failed to rename category: {str(e)}"}), 500
+
+
+@api.route("/sync/upload", methods=["POST"])
+def sync_upload():
+    """同步本地文件到云端"""
+    try:
+        sync = ImageSync(config=current_app.config["PLUGIN_CONFIG"]["img_sync"], local_dir=MEMES_DIR)
+        success = sync.upload_to_remote()
+        if success:
+            return jsonify({"message": "上传成功"}), 200
+        else:
+            return jsonify({"message": "上传失败"}), 500
+    except Exception as e:
+        return jsonify({"message": f"上传失败: {str(e)}"}), 500
+
+
+@api.route("/sync/download", methods=["POST"])
+def sync_download():
+    """从云端下载文件到本地"""
+    try:
+        sync = ImageSync(config=current_app.config["PLUGIN_CONFIG"]["img_sync"], local_dir=MEMES_DIR)
+        success = sync.download_to_local()
+        if success:
+            return jsonify({"message": "下载成功"}), 200
+        else:
+            return jsonify({"message": "下载失败"}), 500
+    except Exception as e:
+        return jsonify({"message": f"下载失败: {str(e)}"}), 500
 
 

@@ -404,80 +404,37 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // 同步到云端
   async function syncToRemote() {
     try {
-      const btn = document.getElementById("upload-sync-btn");
-      btn.disabled = true;
-      btn.textContent = "同步中...";
-
-      const response = await fetch("/api/sync/upload", { method: "POST" });
-      if (!response.ok) throw new Error("同步到云端失败");
-
-      // 开始轮询检查进度
-      while (true) {
-        const statusResponse = await fetch("/api/sync/check_process");
-        if (!statusResponse.ok) throw new Error("检查同步状态失败");
-        const status = await statusResponse.json();
-
-        if (status.completed) {
-          if (status.success) {
-            alert("同步到云端完成！");
-            await checkSyncStatus(); // 刷新同步状态
-          } else {
-            throw new Error("同步失败");
-          }
-          break;
-        }
-
-        // 等待1秒后再次检查
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch("/api/sync/upload", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message);
       }
+      alert("同步到云端成功！");
     } catch (error) {
       console.error("同步到云端失败:", error);
       alert("同步到云端失败: " + error.message);
-    } finally {
-      const btn = document.getElementById("upload-sync-btn");
-      btn.disabled = false;
-      btn.textContent = "同步到云端";
     }
   }
 
+  // 从云端同步
   async function syncFromRemote() {
     try {
-      const btn = document.getElementById("download-sync-btn");
-      btn.disabled = true;
-      btn.textContent = "同步中...";
-
-      const response = await fetch("/api/sync/download", { method: "POST" });
-      if (!response.ok) throw new Error("从云端同步失败");
-
-      // 开始轮询检查进度
-      while (true) {
-        const statusResponse = await fetch("/api/sync/check_process");
-        if (!statusResponse.ok) throw new Error("检查同步状态失败");
-        const status = await statusResponse.json();
-
-        if (status.completed) {
-          if (status.success) {
-            alert("从云端同步完成！");
-            await checkSyncStatus(); // 刷新同步状态
-            await fetchEmojis(); // 刷新表情包列表
-          } else {
-            throw new Error("同步失败");
-          }
-          break;
-        }
-
-        // 等待1秒后再次检查
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch("/api/sync/download", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message);
       }
+      alert("从云端同步成功！");
     } catch (error) {
       console.error("从云端同步失败:", error);
       alert("从云端同步失败: " + error.message);
-    } finally {
-      const btn = document.getElementById("download-sync-btn");
-      btn.disabled = false;
-      btn.textContent = "从云端同步";
     }
   }
 
