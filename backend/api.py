@@ -123,26 +123,25 @@ def get_sync_status():
     """获取同步状态"""
     try:
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        category_manager = plugin_config.get("category_manager")
+        img_sync = plugin_config.get("img_sync")
+        if not img_sync:
+            return jsonify({
+                "error": "配置错误",
+                "detail": "图床服务未配置",
+                "config": str(plugin_config)
+            }), 400
         
-        if not category_manager:
-            raise ValueError("未找到类别管理器")
-            
-        missing_in_config, deleted_categories = category_manager.get_sync_status()
-        
+        # 获取本地文件夹与图床的同步状态
+        local_files = img_sync.get_remote_files()  # 获取远程文件列表
+        # 这里可以添加逻辑来比较本地文件和远程文件，返回需要上传和下载的文件信息
+
         return jsonify({
             "status": "ok",
-            "differences": {
-                "missing_in_config": missing_in_config,  # 需要添加到配置
-                "deleted_categories": deleted_categories,  # 已删除的类别
-            }
+            "local_files": local_files,
+            # 其他需要返回的信息
         })
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e),
-            "detail": traceback.format_exc()
-        }), 500
+        return jsonify({"error": str(e)}), 500
 
 
 @api.route("/sync/config", methods=["POST"])

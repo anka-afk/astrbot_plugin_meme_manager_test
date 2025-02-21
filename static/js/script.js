@@ -325,7 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 修改检查同步状态的函数
+  // 检查同步状态的函数
   async function checkSyncStatus() {
     const statusDiv = document.getElementById("sync-status");
     if (!statusDiv) return;
@@ -335,49 +335,35 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!response.ok) throw new Error("检查同步状态失败");
 
       const data = await response.json();
-      if (data.status === "error") throw new Error(data.message);
+      if (data.error) {
+        statusDiv.innerHTML = `<p style="color: red;">${data.detail}</p>`;
+        return;
+      }
 
       // 更新状态显示
       let statusHtml = "";
-      const { differences } = data;
+      const { missing_in_config, deleted_categories } = data.differences;
 
-      if (differences.missing_in_config.length > 0) {
+      if (missing_in_config.length > 0) {
         statusHtml += `
           <div class="status-section">
             <h4>新增类别（需要添加到配置）：</h4>
             <ul>
-              ${differences.missing_in_config
-                .map(
-                  (category) => `
-                <li>
-                  ${category}
-                  <button onclick="syncConfig()" class="sync-btn">同步配置</button>
-                </li>
-              `
-                )
+              ${missing_in_config
+                .map((category) => `<li>${category}</li>`)
                 .join("")}
             </ul>
           </div>
         `;
       }
 
-      if (differences.deleted_categories.length > 0) {
+      if (deleted_categories.length > 0) {
         statusHtml += `
           <div class="status-section">
             <h4>已删除的类别（配置中仍存在）：</h4>
             <ul>
-              ${differences.deleted_categories
-                .map(
-                  (category) => `
-                <li>
-                  ${category}
-                  <div class="action-buttons">
-                    <button onclick="restoreCategory('${category}')" class="restore-btn">恢复类别</button>
-                    <button onclick="removeFromConfig('${category}')" class="remove-btn">从配置中删除</button>
-                  </div>
-                </li>
-              `
-                )
+              ${deleted_categories
+                .map((category) => `<li>${category}</li>`)
                 .join("")}
             </ul>
           </div>
@@ -386,12 +372,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!statusHtml) {
         statusHtml = "<p>配置与文件夹结构一致！</p>";
-      } else {
-        statusHtml += `
-          <div class="sync-actions">
-            <button onclick="syncConfig()" class="main-sync-btn">同步所有配置</button>
-          </div>
-        `;
       }
 
       statusDiv.innerHTML = statusHtml;
@@ -404,7 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 添加同步到云端的函数
+  // 在同步完成后调用 checkSyncStatus
   async function syncToRemote() {
     try {
       const response = await fetch("/api/sync/upload", {
@@ -423,7 +403,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 添加从云端同步的函数
   async function syncFromRemote() {
     try {
       const response = await fetch("/api/sync/download", {
@@ -442,26 +421,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 检查同步进程状态的函数
-  async function checkSyncStatus() {
-    try {
-      const response = await fetch("/api/sync/check_process");
-      const data = await response.json();
-      if (data.completed) {
-        if (data.success) {
-          alert("同步完成！");
-        } else {
-          alert("同步失败，请检查日志。");
-        }
-      } else {
-        alert("同步进行中，请稍候...");
-      }
-    } catch (error) {
-      console.error("检查同步状态失败:", error);
-      alert("检查同步状态失败: " + error.message);
-    }
-  }
-
   // 添加事件监听器
   document
     .getElementById("upload-sync-btn")
@@ -469,9 +428,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("download-sync-btn")
     .addEventListener("click", syncFromRemote);
-
-  // 初始检查一次同步状态
-  checkSyncStatus();
 
   // 添加同步配置的函数
   async function syncConfig() {
