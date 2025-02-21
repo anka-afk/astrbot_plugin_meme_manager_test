@@ -342,29 +342,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // 更新状态显示
       let statusHtml = "";
-      const { missing_in_config, deleted_categories } = data.differences;
+      const { to_add, to_remove } = data.differences;
 
-      if (missing_in_config.length > 0) {
+      if (to_add.length > 0) {
         statusHtml += `
           <div class="status-section">
             <h4>新增类别（需要添加到配置）：</h4>
             <ul>
-              ${missing_in_config
-                .map((category) => `<li>${category}</li>`)
-                .join("")}
+              ${to_add.map((category) => `<li>${category}</li>`).join("")}
             </ul>
           </div>
         `;
       }
 
-      if (deleted_categories.length > 0) {
+      if (to_remove.length > 0) {
         statusHtml += `
           <div class="status-section">
             <h4>已删除的类别（配置中仍存在）：</h4>
             <ul>
-              ${deleted_categories
-                .map((category) => `<li>${category}</li>`)
-                .join("")}
+              ${to_remove.map((category) => `<li>${category}</li>`).join("")}
             </ul>
           </div>
         `;
@@ -380,7 +376,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const imgSyncResponse = await fetch("/api/sync/status");
       if (imgSyncResponse.ok) {
         const imgSyncData = await imgSyncResponse.json();
-        // 假设 imgSyncData 包含需要上传和下载的文件信息
         const { to_upload, to_download } = imgSyncData; // 需要根据实际返回的数据结构调整
 
         let syncStatusHtml = "<h4>图床同步状态：</h4>";
