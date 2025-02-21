@@ -17,6 +17,10 @@ api = Blueprint("api", __name__)
 def get_all_emojis():
     """获取所有表情包（按类别分组）"""
     emoji_data = scan_emoji_folder()
+    # 确保每个类别的表情包数据都是数组
+    for category in emoji_data:
+        if not isinstance(emoji_data[category], list):
+            emoji_data[category] = []  # 如果不是列表，设置为空列表
     return jsonify(emoji_data)
 
 

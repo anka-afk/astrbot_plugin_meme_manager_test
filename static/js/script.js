@@ -53,6 +53,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!Array.isArray(emojis)) {
         console.error(`类别 "${category}" 的表情包数据格式不正确`);
         emojis = []; // 如果不是数组，设置为一个空数组
+      } else if (typeof emojis === "string") {
+        console.error(
+          `类别 "${category}" 的表情包数据格式不正确，实际为字符串`
+        );
+        emojis = []; // 如果是字符串，设置为一个空数组
       }
 
       const categoryDiv = document.createElement("div");
