@@ -14,6 +14,9 @@ from .backend.api import api
 from .utils import generate_secret_key
 from .config import MEMES_DIR
 import psutil
+import logging
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -99,14 +102,16 @@ def start_server(config=None):
     """启动服务器"""
     global SERVER_LOGIN_KEY, SERVER_PROCESS
     
+    logger.debug("Starting server with config: %s", config)
+
     # 如果已有进程在运行，先关闭它
     port = config.get("webui_port", 5000) if config else 5000
     if is_webui_running(port):
-        print(f"检测到端口 {port} 已被占用，尝试关闭现有进程...")
+        logger.warning("Detected that port %d is already in use, attempting to close existing process...", port)
         kill_existing_webui(port)
     
     SERVER_LOGIN_KEY = generate_secret_key(8)
-    print("当前秘钥为:", SERVER_LOGIN_KEY)
+    logger.debug("Current server login key: %s", SERVER_LOGIN_KEY)
 
     app.secret_key = os.urandom(16)
 
@@ -116,10 +121,12 @@ def start_server(config=None):
             "category_manager": config.get("category_manager"),
             "webui_port": port
         }
+        logger.debug("Plugin config set: %s", app.config["PLUGIN_CONFIG"])
 
     # 启动新进程
     SERVER_PROCESS = multiprocessing.Process(target=run_server, args=(port,))
     SERVER_PROCESS.start()
+    logger.info("Server started on port %d", port)
     return SERVER_LOGIN_KEY, SERVER_PROCESS
 
 def shutdown_server(server_process):

@@ -25,6 +25,9 @@ from .config import MEMES_DIR
 from .category_manager import CategoryManager
 from .init import init_plugin
 
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+logger = logging.getLogger(__name__)
 
 @register(
     "meme_manager_test", "anka", "anka - 表情包管理器 - 支持表情包发送及表情包上传", "2.0"
@@ -34,8 +37,11 @@ class MemeSender(Star):
         super().__init__(context)
         self.config = config or {}
         
+        logger.debug("Initializing MemeSender with config: %s", self.config)
+
         # 初始化插件
         if not init_plugin():
+            logger.error("Plugin initialization failed.")
             raise RuntimeError("插件初始化失败")
         
         # 初始化类别管理器
@@ -46,6 +52,7 @@ class MemeSender(Star):
         if self.config.get("image_host") == "stardots":
             stardots_config = self.config.get("image_host_config", {}).get("stardots", {})
             if stardots_config.get("key") and stardots_config.get("secret"):
+                logger.debug("Initializing ImageSync with stardots config: %s", stardots_config)
                 self.img_sync = ImageSync(
                     config={
                         "key": stardots_config["key"],
@@ -54,6 +61,8 @@ class MemeSender(Star):
                     },
                     local_dir=MEMES_DIR
                 )
+            else:
+                logger.error("Stardots configuration is missing key or secret.")
 
         # 用于存储服务器进程
         self.server_process = None

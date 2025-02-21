@@ -44,9 +44,14 @@ class ImageSync:
             config: 包含图床配置信息的字典，必须包含 key、secret 和 space
             local_dir: 本地图片目录的路径
         """
+        logger.debug("Initializing ImageSync with config: %s", config)
         self.config = config  # 保存完整配置
         self.local_dir = Path(local_dir)  # 保存本地目录路径
         self.provider = self._initialize_provider(config)
+        if self.provider is None:
+            logger.error("Image provider initialization failed.")
+        else:
+            logger.debug("Image provider initialized successfully: %s", self.provider)
         self.sync_manager = SyncManager(
             image_host=self.provider, 
             local_dir=self.local_dir
@@ -57,7 +62,12 @@ class ImageSync:
     def _initialize_provider(self, config):
         # 初始化图床提供者
         # 这里需要根据你的图床服务实现相应的提供者
-        pass
+        logger.debug("Initializing image provider with config: %s", config)
+        if config.get("provider_type") == "stardots":
+            return StarDotsProvider(config)  # 确保返回一个有效的提供者实例
+        else:
+            logger.error("No valid image provider type found.")
+            return None
 
     def check_status(self) -> Dict[str, List[Dict[str, str]]]:
         """
