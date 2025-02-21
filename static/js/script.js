@@ -627,4 +627,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 同步配置
   syncConfig();
+
+  // 加载类别数据并更新显示
+  async function loadCategories() {
+    try {
+      const response = await fetch("/api/emotions");
+      if (!response.ok) {
+        throw new Error("无法加载类别数据");
+      }
+      const data = await response.json();
+      updateSidebar(data, data); // 假设 data 也包含描述
+      displayCategories(data, data); // 更新类别显示
+    } catch (error) {
+      console.error("加载类别失败:", error);
+      alert("加载类别失败: " + error.message);
+    }
+  }
+
+  // 在 DOMContentLoaded 事件中调用 loadCategories
+  loadCategories(); // 页面加载时获取类别
 });
