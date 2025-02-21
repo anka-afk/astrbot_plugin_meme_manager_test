@@ -282,25 +282,39 @@ def rename_category():
         if not astr_config:
             return jsonify({"message": "Config not found"}), 404
 
-        # 重命名文件夹
+        # 检查旧文件夹是否存在
         old_path = os.path.join(current_app.config["MEMES_DIR"], old_name)
-        new_path = os.path.join(current_app.config["MEMES_DIR"], new_name)
         if not os.path.exists(old_path):
             return jsonify({"message": "Category not found"}), 404
+
+        # 检查新名称是否已存在
+        new_path = os.path.join(current_app.config["MEMES_DIR"], new_name)
         if os.path.exists(new_path):
             return jsonify({"message": "New category name already exists"}), 400
         
-        os.rename(old_path, new_path)
+        try:
+            # 更新配置（在重命名文件夹之前）
+            descriptions = astr_config.get("category_descriptions", {})
+            if old_name in descriptions:
+                description = descriptions[old_name]
+                del descriptions[old_name]  # 删除旧的键
+                descriptions[new_name] = description  # 添加新的键
+                astr_config["category_descriptions"] = descriptions
+                astr_config.save_config()  # 保存配置
 
-        # 更新配置
-        descriptions = astr_config.get("category_descriptions", {})
-        if old_name in descriptions:
-            description = descriptions.pop(old_name)
-            descriptions[new_name] = description
-            astr_config["category_descriptions"] = descriptions
-            astr_config.save_config()  # 确保调用 save_config
+            # 重命名文件夹
+            os.rename(old_path, new_path)
+            
+            return jsonify({"message": "Category renamed successfully"}), 200
+        except Exception as e:
+            # 如果重命名过程中出错，尝试回滚配置
+            if new_name in descriptions and old_name not in descriptions:
+                descriptions[old_name] = descriptions[new_name]
+                del descriptions[new_name]
+                astr_config["category_descriptions"] = descriptions
+                astr_config.save_config()
+            raise e
 
-        return jsonify({"message": "Category renamed successfully"}), 200
     except Exception as e:
         return jsonify({"message": f"Failed to rename category: {str(e)}"}), 500
 
