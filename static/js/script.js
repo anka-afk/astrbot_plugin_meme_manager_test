@@ -170,10 +170,14 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         body: formData,
       });
+      const data = await response.json();
       if (!response.ok) {
         console.error("添加表情包失败，响应异常");
+        alert(data.message);
+        return;
       }
-      fetchEmojis();
+      fetchEmojis(); // 刷新表情包列表
+      alert(`添加表情包成功: ${data.filename} 到类别 ${data.category}`);
     } catch (error) {
       console.error("添加表情包失败", error);
     }
@@ -189,10 +193,14 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category, image_file: emoji }),
       });
+      const data = await response.json();
       if (!response.ok) {
         console.error("删除表情包失败，响应异常");
+        alert(data.message);
+        return;
       }
-      fetchEmojis();
+      fetchEmojis(); // 刷新表情包列表
+      alert(`删除表情包成功: ${data.filename} 从类别 ${data.category}`);
     } catch (error) {
       console.error("删除表情包失败", error);
     }
@@ -523,11 +531,13 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ category }),
       });
 
-      if (!response.ok) throw new Error("恢复类别失败");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
 
       // 重新加载数据
       await fetchEmojis();
       await checkSyncStatus();
+      alert(`恢复类别成功: ${category} 描述: ${data.description}`);
     } catch (error) {
       console.error("恢复类别失败:", error);
       alert("恢复类别失败: " + error.message);

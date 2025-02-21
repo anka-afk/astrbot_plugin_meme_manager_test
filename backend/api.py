@@ -58,7 +58,7 @@ def add_emoji():
         if category_manager:
             category_manager.sync_with_filesystem()
             
-        return jsonify({"message": "Emoji added successfully", "path": result_path}), 201
+        return jsonify({"message": "Emoji added successfully", "path": result_path, "category": category, "filename": image_file.filename}), 201
     except Exception as e:
         return jsonify({"message": f"添加表情包失败: {str(e)}"}), 500
 
@@ -73,7 +73,7 @@ def delete_emoji():
         return jsonify({"message": "Category and image file are required"}), 400
 
     if delete_emoji_from_category(category, image_file):
-        return jsonify({"message": "Emoji deleted successfully"}), 200
+        return jsonify({"message": "Emoji deleted successfully", "category": category, "filename": image_file}), 200
     else:
         return jsonify({"message": "Emoji not found"}), 404
 
@@ -192,14 +192,7 @@ def update_category_description():
 
 @api.route("/category/restore", methods=["POST"])
 def restore_category():
-    """恢复或创建新类别
-    
-    请求体格式:
-    {
-        "category": "类别名称",
-        "description": "类别描述"  # 可选，默认为"请添加描述"
-    }
-    """
+    """恢复或创建新类别"""
     try:
         data = request.get_json()
         category = data.get("category")
@@ -220,7 +213,7 @@ def restore_category():
 
         # 更新类别描述
         if category_manager.update_description(category, description):
-            return jsonify({"message": "Category created successfully"}), 200
+            return jsonify({"message": "Category created successfully", "description": description}), 200
         else:
             return jsonify({"message": "Failed to create category"}), 500
 
