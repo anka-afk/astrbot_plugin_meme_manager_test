@@ -380,7 +380,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const imgSyncResponse = await fetch("/api/sync/status");
       if (imgSyncResponse.ok) {
         const imgSyncData = await imgSyncResponse.json();
-        // 这里可以根据 imgSyncData 的内容更新图床同步状态
         // 假设 imgSyncData 包含需要上传和下载的文件信息
         const { to_upload, to_download } = imgSyncData; // 需要根据实际返回的数据结构调整
 
