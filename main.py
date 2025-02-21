@@ -21,6 +21,9 @@ from astrbot.core.message.message_event_result import MessageChain
 from .webui import start_server, shutdown_server
 from .utils import get_public_ip
 from .image_host.img_sync import ImageSync
+from .config import MEMES_DIR
+from .category_manager import CategoryManager
+from .init import init_plugin
 
 
 @register(
@@ -30,65 +33,14 @@ class MemeSender(Star):
     def __init__(self, context: Context, config: dict = None):
         super().__init__(context)
         self.config = config or {}
-        self.astr_config = self.context.get_config()  # 获取 AstrBotConfig 对象
         
-        # 添加调试日志
-        print("[DEBUG] 插件初始化时 angry 的描述:", 
-              self.astr_config.get("category_descriptions", {}).get("angry", "未找到"))
+        # 初始化插件
+        if not init_plugin():
+            raise RuntimeError("插件初始化失败")
         
-        # 加载配置
-        self.category_descriptions = self.astr_config.get("category_descriptions", {})
+        # 初始化类别管理器
+        self.category_manager = CategoryManager()
         
-        # 设置默认配置
-        if not self.category_descriptions:  # 如果配置为空，使用默认值
-            self.category_descriptions = {
-                "angry": "表达愤怒或不满的场景",
-                "happy": "表达开心或愉悦的场景",
-                "sad": "表达悲伤或遗憾的场景",
-                "surprised": "表达震惊或意外的场景",
-                "confused": "表达困惑或不解的场景",
-                "color": "表达调皮或暧昧的场景",
-                "cpu": "表达思维停滞的场景",
-                "fool": "表达自嘲或调侃的场景",
-                "givemoney": "表达想要报酬的场景",
-                "like": "表达喜爱之情的场景",
-                "see": "表达关注或观察的场景",
-                "shy": "表达害羞的场景",
-                "work": "表达工作相关的场景",
-                "scissors": "表达剪切或分割的场景",
-                "reply": "表达等待回复的场景",
-                "meow": "表达卖萌的场景",
-                "baka": "表达责备的场景",
-                "morning": "表达早安问候的场景",
-                "sleep": "表达疲惫或休息的场景",
-                "sigh": "表达叹息的场景"
-            }
-            # 保存到配置
-            self.astr_config["category_descriptions"] = self.category_descriptions
-            self.astr_config.save_config()
-        
-        self.image_host = self.config.get("image_host", "stardots")
-        self.image_host_key = self.config.get("image_host_key", "")
-        self.image_host_secret = self.config.get("image_host_secret", "")
-
-        self.found_emotions = []  # 存储找到的表情
-        self.upload_states = (
-            {}
-        )  # 存储上传状态：{user_session: {"category": str, "expire_time": float}}
-        self.pending_images = {}  # 存储待发送的图片
-
-        # 获取当前文件所在目录
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.meme_path = os.path.join(
-            current_dir, self.config.get("memes_path", "memes")
-        )
-
-        # 设置日志
-        logging.basicConfig(level=logging.DEBUG)
-        self.logger = logging.getLogger(__name__)
-        # 检查表情包目录
-        self._check_meme_directories()
-
         # 初始化图床同步客户端
         self.img_sync = None
         if self.config.get("image_host") == "stardots":
@@ -100,7 +52,7 @@ class MemeSender(Star):
                         "secret": stardots_config["secret"],
                         "space": stardots_config.get("space", "memes")
                     },
-                    local_dir=self.meme_path
+                    local_dir=MEMES_DIR
                 )
 
         # 用于存储服务器进程
@@ -113,15 +65,10 @@ class MemeSender(Star):
         yield event.plain_result("表情包管理服务器启动中，请稍候……")
 
         try:
-            # 检查配置中 angry 的描述
-            category_descriptions = self.astr_config.get("category_descriptions", {})
-            angry_desc = category_descriptions.get("angry", "未找到")
-            print(f"[DEBUG] angry 的描述: {angry_desc}")  # 检查 angry 的描述
-            
             server_key, server_process = start_server({
-                "memes_path": self.config.get("memes_path", "memes"),
                 "img_sync": self.img_sync,
-                "astr_config": self.astr_config,
+                "category_manager": self.category_manager,
+                "webui_port": self.config.get("webui_port", 5000)
             })
             self.server_process = server_process
 
@@ -154,9 +101,10 @@ class MemeSender(Star):
     @filter.command("查看表情包")
     async def list_emotions(self, event: AstrMessageEvent):
         """查看所有可用表情包类别"""
+        descriptions = self.category_manager.get_descriptions()
         categories = "\n".join([
             f"- {tag}: {desc}" 
-            for tag, desc in self.category_descriptions.items()
+            for tag, desc in descriptions.items()
         ])
         yield event.plain_result(f"当前支持的表情包类别：\n{categories}")
 
@@ -169,7 +117,7 @@ class MemeSender(Star):
             )
             return
 
-        if category not in self.category_descriptions:
+        if category not in self.category_manager.get_descriptions():
             yield event.plain_result(
                 f"无效的表情包类别：{category}\n使用/查看表情包查看可用类别"
             )
@@ -202,8 +150,8 @@ class MemeSender(Star):
             return
 
         category_cn = upload_state["category"]
-        category_en = self.category_descriptions[category_cn]
-        save_dir = os.path.join(self.meme_path, category_en)
+        category_en = self.category_manager.get_descriptions()[category_cn]
+        save_dir = os.path.join(MEMES_DIR, category_en)
 
         try:
             os.makedirs(save_dir, exist_ok=True)
@@ -276,20 +224,20 @@ class MemeSender(Star):
 
     async def reload_emotions(self):
         """动态加载表情配置"""
-        config_path = os.path.join(self.meme_path, "emotions.json")
+        config_path = os.path.join(MEMES_DIR, "emotions.json")
         if os.path.exists(config_path):
             with open(config_path, "r", encoding="utf-8") as f:
-                self.category_descriptions.update(json.load(f))
+                self.category_manager.update_descriptions(json.load(f))
 
     def _check_meme_directories(self):
         """检查表情包目录是否存在并且包含图片"""
-        self.logger.info(f"表情包根目录: {self.meme_path}")
-        if not os.path.exists(self.meme_path):
-            self.logger.error(f"表情包根目录不存在: {self.meme_path}")
+        self.logger.info(f"表情包根目录: {MEMES_DIR}")
+        if not os.path.exists(MEMES_DIR):
+            self.logger.error(f"表情包根目录不存在: {MEMES_DIR}")
             return
 
-        for emotion in self.category_descriptions.values():
-            emotion_path = os.path.join(self.meme_path, emotion)
+        for emotion in self.category_manager.get_descriptions().values():
+            emotion_path = os.path.join(MEMES_DIR, emotion)
             if not os.path.exists(emotion_path):
                 self.logger.error(f"表情目录不存在: {emotion_path}")
                 continue
@@ -327,7 +275,7 @@ class MemeSender(Star):
             matches = re.finditer(pattern, text)
             for match in matches:
                 emotion = match.group(1)
-                if emotion in self.category_descriptions:
+                if emotion in self.category_manager.get_descriptions():
                     self.found_emotions.append(emotion)
                     clean_text = clean_text.replace(match.group(0), "")
 
@@ -382,11 +330,11 @@ class MemeSender(Star):
 
         try:
             for emotion in self.found_emotions:
-                emotion_en = self.category_descriptions.get(emotion)
+                emotion_en = self.category_manager.get_descriptions().get(emotion)
                 if not emotion_en:
                     continue
 
-                emotion_path = os.path.join(self.meme_path, emotion_en)
+                emotion_path = os.path.join(MEMES_DIR, emotion_en)
                 if not os.path.exists(emotion_path):
                     continue
 
@@ -499,7 +447,7 @@ class MemeSender(Star):
         """处理消息，直接匹配英文标签"""
         message = event.message.strip()
         # 直接查找对应的英文标签
-        if message in self.category_descriptions:
+        if message in self.category_manager.get_descriptions():
             # 使用英文标签查找表情包
             await self.send_random_emoji(event, message)
             return True
@@ -509,7 +457,7 @@ class MemeSender(Star):
         """发送随机表情包"""
         try:
             # 直接使用英文分类名
-            emoji_dir = os.path.join(self.meme_path, category)
+            emoji_dir = os.path.join(MEMES_DIR, category)
             if not os.path.exists(emoji_dir):
                 self.logger.error(f"表情目录不存在: {emoji_dir}")
                 return

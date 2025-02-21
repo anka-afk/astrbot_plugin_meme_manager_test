@@ -10,6 +10,7 @@ from .models import (
 import os
 import shutil
 import traceback
+from ..config import MEMES_DIR
 
 
 api = Blueprint("api", __name__)
@@ -77,19 +78,12 @@ def get_emotions():
     """获取标签描述映射"""
     try:
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        astr_config = plugin_config.get("astr_config")
+        category_manager = plugin_config.get("category_manager")
         
-        if not astr_config:
-            raise ValueError("未找到配置对象")
+        if not category_manager:
+            raise ValueError("未找到类别管理器")
         
-        # 直接从 astr_config 对象获取描述
-        category_descriptions = astr_config.get("category_descriptions", {})
-        
-        # 添加简短的调试日志
-        angry_desc = category_descriptions.get("angry", "未找到")
-        current_app.logger.debug(f"[DEBUG] /emotions API - angry 的描述: {angry_desc}")
-        
-        return jsonify(category_descriptions)
+        return jsonify(category_manager.get_descriptions())
     except Exception as e:
         current_app.logger.error(f"获取标签描述失败: {str(e)}")
         current_app.logger.error(f"错误详情: {traceback.format_exc()}")
@@ -105,23 +99,16 @@ def delete_category():
         if not category:
             return jsonify({"message": "Category is required"}), 400
 
-        # 删除文件夹
-        category_path = os.path.join(current_app.config["MEMES_DIR"], category)
-        if os.path.exists(category_path):
-            shutil.rmtree(category_path)
-
-        # 更新配置
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        astr_config = plugin_config.get("astr_config")
-        if astr_config:
-            # 从配置中移除
-            descriptions = astr_config.get("category_descriptions", {})
-            if category in descriptions:
-                del descriptions[category]
-                astr_config["category_descriptions"] = descriptions
-                astr_config.save_config()
+        category_manager = plugin_config.get("category_manager")
+        
+        if not category_manager:
+            return jsonify({"message": "Category manager not found"}), 404
 
-        return jsonify({"message": "Category deleted successfully"}), 200
+        if category_manager.delete_category(category):
+            return jsonify({"message": "Category deleted successfully"}), 200
+        else:
+            return jsonify({"message": "Failed to delete category"}), 500
     except Exception as e:
         return jsonify({"message": f"Failed to delete category: {str(e)}"}), 500
 
@@ -130,25 +117,13 @@ def delete_category():
 def get_sync_status():
     """获取同步状态"""
     try:
-        # 获取表情包文件夹下的所有目录
-        memes_dir = current_app.config["MEMES_DIR"]
-        local_categories = set(
-            d for d in os.listdir(memes_dir) 
-            if os.path.isdir(os.path.join(memes_dir, d))
-        )
-        
-        # 获取配置中的类别
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        astr_config = plugin_config.get("astr_config")
-        if not astr_config:
-            raise ValueError("未找到配置对象")
-            
-        # 这里修改为 category_descriptions
-        config_categories = set(astr_config.get("category_descriptions", {}).keys())
+        category_manager = plugin_config.get("category_manager")
         
-        # 比较差异
-        missing_in_config = list(local_categories - config_categories)  # 本地有但配置没有
-        deleted_categories = list(config_categories - local_categories)  # 配置有但本地没有
+        if not category_manager:
+            raise ValueError("未找到类别管理器")
+            
+        missing_in_config, deleted_categories = category_manager.get_sync_status()
         
         return jsonify({
             "status": "ok",
@@ -169,11 +144,17 @@ def get_sync_status():
 def sync_config():
     """同步配置与文件夹结构的 API 端点"""
     try:
-        sync_config_internal()
-        return jsonify({"message": "配置同步成功"}), 200
+        plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        category_manager = plugin_config.get("category_manager")
+        
+        if not category_manager:
+            raise ValueError("未找到类别管理器")
+            
+        if category_manager.sync_with_filesystem():
+            return jsonify({"message": "配置同步成功"}), 200
+        else:
+            return jsonify({"message": "配置同步失败"}), 500
     except Exception as e:
-        current_app.logger.error(f"同步配置失败: {str(e)}")
-        current_app.logger.error(f"错误详情: {traceback.format_exc()}")
         return jsonify({
             "message": f"配置同步失败: {str(e)}",
             "detail": traceback.format_exc()
@@ -190,21 +171,16 @@ def update_category_description():
         if not category or not description:
             return jsonify({"message": "Category and description are required"}), 400
 
-        # 获取配置
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        astr_config = plugin_config.get("astr_config")
-        if not astr_config:
-            return jsonify({"message": "Config not found"}), 404
+        category_manager = plugin_config.get("category_manager")
+        
+        if not category_manager:
+            return jsonify({"message": "Category manager not found"}), 404
             
-        # 更新描述
-        descriptions = astr_config.get("category_descriptions", {})
-        descriptions[category] = description
-        astr_config["category_descriptions"] = descriptions
-        
-        # 保存配置
-        astr_config.save_config()  # 确保调用 save_config
-        
-        return jsonify({"message": "Category description updated successfully"}), 200
+        if category_manager.update_description(category, description):
+            return jsonify({"message": "Category description updated successfully"}), 200
+        else:
+            return jsonify({"message": "Failed to update category description"}), 500
     except Exception as e:
         return jsonify({"message": f"Failed to update category description: {str(e)}"}), 500
 
@@ -277,45 +253,16 @@ def rename_category():
         if not old_name or not new_name:
             return jsonify({"message": "Old and new category names are required"}), 400
 
-        # 获取配置
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
-        astr_config = plugin_config.get("astr_config")
-        if not astr_config:
-            return jsonify({"message": "Config not found"}), 404
-
-        # 检查旧文件夹是否存在
-        old_path = os.path.join(current_app.config["MEMES_DIR"], old_name)
-        if not os.path.exists(old_path):
-            return jsonify({"message": "Category not found"}), 404
-
-        # 检查新名称是否已存在
-        new_path = os.path.join(current_app.config["MEMES_DIR"], new_name)
-        if os.path.exists(new_path):
-            return jsonify({"message": "New category name already exists"}), 400
+        category_manager = plugin_config.get("category_manager")
         
-        try:
-            # 更新配置（在重命名文件夹之前）
-            descriptions = astr_config.get("category_descriptions", {})
-            if old_name in descriptions:
-                description = descriptions[old_name]
-                del descriptions[old_name]  # 删除旧的键
-                descriptions[new_name] = description  # 添加新的键
-                astr_config["category_descriptions"] = descriptions
-                astr_config.save_config()  # 保存配置
+        if not category_manager:
+            return jsonify({"message": "Category manager not found"}), 404
 
-            # 重命名文件夹
-            os.rename(old_path, new_path)
-            
+        if category_manager.rename_category(old_name, new_name):
             return jsonify({"message": "Category renamed successfully"}), 200
-        except Exception as e:
-            # 如果重命名过程中出错，尝试回滚配置
-            if new_name in descriptions and old_name not in descriptions:
-                descriptions[old_name] = descriptions[new_name]
-                del descriptions[new_name]
-                astr_config["category_descriptions"] = descriptions
-                astr_config.save_config()
-            raise e
-
+        else:
+            return jsonify({"message": "Failed to rename category"}), 500
     except Exception as e:
         return jsonify({"message": f"Failed to rename category: {str(e)}"}), 500
 

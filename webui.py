@@ -12,29 +12,26 @@ from flask import (
 )
 from .backend.api import api
 from .utils import generate_secret_key
-import psutil  # 用于进程管理
+from .config import MEMES_DIR
+import psutil
 
 app = Flask(__name__)
 
 # 注册API蓝图
 app.register_blueprint(api, url_prefix="/api")
 
-
 SERVER_LOGIN_KEY = None
 SERVER_PROCESS = None
-
 
 def is_webui_running(port=5000):
     """检查 WebUI 是否已经在运行"""
     try:
-        # 检查端口是否被占用
         for conn in psutil.net_connections():
             if conn.laddr.port == port and conn.status == 'LISTEN':
                 return True
         return False
     except:
         return False
-
 
 def kill_existing_webui(port=5000):
     """关闭已存在的 WebUI 进程"""
@@ -52,13 +49,11 @@ def kill_existing_webui(port=5000):
         pass
     return False
 
-
 @app.before_request
 def require_login():
     allowed_endpoints = ["login", "static"]
     if request.endpoint not in allowed_endpoints and not session.get("authenticated"):
         return redirect(url_for("login"))
-
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -74,27 +69,19 @@ def login():
             error = "秘钥错误，请重试。"
     return render_template("login.html", error=error)
 
-
 @app.route("/")
 def index():
     if not session.get("authenticated"):
         return redirect(url_for("login"))
     return render_template("index.html")
 
-
 @app.route("/memes/<category>/<filename>")
 def serve_emoji(category, filename):
-    # 从 Flask 配置中获取 MEMES_DIR
-    MEMES_DIR = app.config.get("MEMES_DIR", None)
-    if MEMES_DIR is None:
-        return "MEMES_DIR 未定义", 500
-
     category_path = os.path.join(MEMES_DIR, category)
     if os.path.exists(os.path.join(category_path, filename)):
         return send_from_directory(category_path, filename)
     else:
         return "File not found: " + os.path.join(category_path, filename), 404
-
 
 @app.route("/shutdown_api", methods=["POST"])
 def shutdown_api():
@@ -104,11 +91,9 @@ def shutdown_api():
     func()
     return "Server shutting down..."
 
-
 def run_server(port=5000):
     """运行服务器"""
     app.run(host="0.0.0.0", port=port)
-
 
 def start_server(config=None):
     """启动服务器"""
@@ -125,44 +110,17 @@ def start_server(config=None):
 
     app.secret_key = os.urandom(16)
 
-    if config is not None:
-        if hasattr(config, 'get'):
-            astr_config = config.get("astr_config")
-            if astr_config:
-                # 检查配置
-                descriptions = astr_config.get("category_descriptions", {})
-                angry_desc = descriptions.get("angry", "未找到")
-                print(f"[DEBUG] webui启动前 angry 的描述: {angry_desc}")
-            
-            app.config["PLUGIN_CONFIG"] = {
-                "memes_path": config.get("memes_path", "memes"),
-                "img_sync": config.get("img_sync"),
-                "astr_config": astr_config,
-            }
-            
-            # 设置表情包目录
-            app.config["MEMES_DIR"] = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                app.config["PLUGIN_CONFIG"]["memes_path"]
-            )
-            
-            # 启动时同步配置 - 这里可能是问题所在
-            from .backend.api import sync_config
-            with app.app_context():
-                try:
-                    print("[DEBUG] 执行同步配置前 angry 的描述:", 
-                          app.config["PLUGIN_CONFIG"]["astr_config"].get("category_descriptions", {}).get("angry", "未找到"))
-                    sync_config()
-                    print("[DEBUG] 执行同步配置后 angry 的描述:", 
-                          app.config["PLUGIN_CONFIG"]["astr_config"].get("category_descriptions", {}).get("angry", "未找到"))
-                except Exception as e:
-                    print(f"启动时同步配置失败: {e}")
+    if config is not None and hasattr(config, 'get'):
+        app.config["PLUGIN_CONFIG"] = {
+            "img_sync": config.get("img_sync"),
+            "category_manager": config.get("category_manager"),
+            "webui_port": port
+        }
 
     # 启动新进程
     SERVER_PROCESS = multiprocessing.Process(target=run_server, args=(port,))
     SERVER_PROCESS.start()
     return SERVER_LOGIN_KEY, SERVER_PROCESS
-
 
 def shutdown_server(server_process):
     """关闭服务器"""
@@ -181,34 +139,15 @@ def shutdown_server(server_process):
     except Exception as e:
         print("关闭服务器时出错:", e)
 
-
 def create_app(config=None):
     app = Flask(__name__)
     
-    if hasattr(config, 'get'):
-        # 获取 AstrBotConfig 对象
-        astr_config = config.get("astr_config")
-        
+    if config is not None and hasattr(config, 'get'):
         app.config["PLUGIN_CONFIG"] = {
-            "memes_path": config.get("memes_path", "memes"),
             "img_sync": config.get("img_sync"),
-            "config": config,  # 完整配置字典
-            "astr_config": astr_config,  # AstrBotConfig 对象
+            "category_manager": config.get("category_manager"),
+            "webui_port": config.get("webui_port", 5000)
         }
-        
-        # 设置表情包目录
-        app.config["MEMES_DIR"] = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            app.config["PLUGIN_CONFIG"]["memes_path"]
-        )
-        
-        # 启动时同步配置
-        from .backend.api import sync_config
-        with app.app_context():
-            try:
-                sync_config()
-            except Exception as e:
-                print(f"启动时同步配置失败: {e}")
     else:
         print("警告: 配置格式不正确")
 
