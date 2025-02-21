@@ -122,26 +122,48 @@ def delete_category():
 def get_sync_status():
     """获取同步状态"""
     try:
+        # 获取表情包文件夹下的所有目录
+        memes_dir = current_app.config["MEMES_DIR"]
+        categories = set(
+            d for d in os.listdir(memes_dir) 
+            if os.path.isdir(os.path.join(memes_dir, d))
+        )
+        
+        # 获取配置中的类别
         plugin_config = current_app.config.get("PLUGIN_CONFIG", {})
+        tag_descriptions = plugin_config.get("tag_descriptions", {}) if plugin_config else {}
+        
+        # 比较差异
+        config_categories = set(tag_descriptions.keys())
+        to_add = list(categories - config_categories)
+        to_remove = list(config_categories - categories)
+        
+        # 获取图床同步状态
         img_sync = plugin_config.get("img_sync")
         if not img_sync:
-            return jsonify({
-                "error": "配置错误",
-                "detail": "图床服务未配置",
-                "config": str(plugin_config)
-            }), 400
+            return jsonify({"error": "图床服务未配置"}), 400
         
-        # 获取本地文件夹与图床的同步状态
-        local_files = img_sync.get_remote_files()  # 获取远程文件列表
-        # 这里可以添加逻辑来比较本地文件和远程文件，返回需要上传和下载的文件信息
+        # 获取待上传和待下载的文件
+        to_upload = img_sync.get_files_to_upload()  # 需要实现这个方法
+        to_download = img_sync.get_files_to_download()  # 需要实现这个方法
 
         return jsonify({
             "status": "ok",
-            "local_files": local_files,
-            # 其他需要返回的信息
+            "differences": {
+                "to_add": to_add,
+                "to_remove": to_remove
+            },
+            "img_sync": {
+                "to_upload": to_upload,
+                "to_download": to_download
+            }
         })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "detail": traceback.format_exc()
+        }), 500
 
 
 @api.route("/sync/config", methods=["POST"])
