@@ -6,6 +6,7 @@ import multiprocessing
 import sys
 import asyncio
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -45,18 +46,18 @@ class ImageSync:
         """
         self.config = config  # 保存完整配置
         self.local_dir = Path(local_dir)  # 保存本地目录路径
-        self.provider = StarDotsProvider({
-            "key": config["key"],
-            "secret": config["secret"],
-            "space": config["space"],
-            "local_dir": str(local_dir),
-        })
+        self.provider = self._initialize_provider(config)
         self.sync_manager = SyncManager(
             image_host=self.provider, 
             local_dir=self.local_dir
         )
         self.sync_process = None
         self._sync_task = None
+
+    def _initialize_provider(self, config):
+        # 初始化图床提供者
+        # 这里需要根据你的图床服务实现相应的提供者
+        pass
 
     def check_status(self) -> Dict[str, List[Dict[str, str]]]:
         """
@@ -203,6 +204,20 @@ class ImageSync:
         # 启动进程
         process.start()
         return process
+
+    def get_files_to_upload(self) -> List[Dict[str, str]]:
+        """获取待上传的文件列表"""
+        local_files = set(os.listdir(self.local_dir))
+        remote_files = set(self.provider.get_image_list())  # 假设这个方法返回远程文件名列表
+        to_upload = local_files - remote_files
+        return [{"filename": file} for file in to_upload]
+
+    def get_files_to_download(self) -> List[Dict[str, str]]:
+        """获取待下载的文件列表"""
+        remote_files = self.provider.get_image_list()  # 获取远程文件列表
+        local_files = set(os.listdir(self.local_dir))
+        to_download = set(remote_files) - local_files
+        return [{"filename": file} for file in to_download]
 
 def run_sync_process(config: Dict[str, str], local_dir: str, task: str):
     """

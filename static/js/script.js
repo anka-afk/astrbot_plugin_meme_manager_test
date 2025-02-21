@@ -335,132 +335,122 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!response.ok) throw new Error("检查同步状态失败");
 
       const data = await response.json();
-      if (data.status === "error") throw new Error(data.message);
+      if (data.error) {
+        statusDiv.innerHTML = `<p style="color: red;">${data.detail}</p>`;
+        return;
+      }
 
       // 更新状态显示
       let statusHtml = "";
-      const { differences } = data;
+      const { to_add, to_remove } = data.differences;
 
-      if (differences.to_add.length > 0) {
-        statusHtml += "<p>需要添加到配置的类别：</p><ul>";
-        differences.to_add.forEach((category) => {
-          statusHtml += `<li>${category}</li>`;
-        });
-        statusHtml += "</ul>";
+      if (to_add.length > 0) {
+        statusHtml += `
+          <div class="status-section">
+            <h4>新增类别（需要添加到配置）：</h4>
+            <ul>
+              ${to_add.map((category) => `<li>${category}</li>`).join("")}
+            </ul>
+          </div>
+        `;
       }
 
-      if (differences.to_remove.length > 0) {
-        statusHtml += "<p>需要从配置中移除的类别：</p><ul>";
-        differences.to_remove.forEach((category) => {
-          statusHtml += `<li>${category}</li>`;
-        });
-        statusHtml += "</ul>";
+      if (to_remove.length > 0) {
+        statusHtml += `
+          <div class="status-section">
+            <h4>已删除的类别（配置中仍存在）：</h4>
+            <ul>
+              ${to_remove.map((category) => `<li>${category}</li>`).join("")}
+            </ul>
+          </div>
+        `;
       }
 
-      if (!statusHtml) {
-        statusHtml = "<p>配置与文件夹结构一致！</p>";
+      // 添加图床同步状态显示
+      const { img_sync } = data;
+      const { to_upload, to_download } = img_sync;
+
+      let syncStatusHtml = "<h4>图床同步状态：</h4>";
+      if (to_upload.length > 0) {
+        syncStatusHtml += `
+          <div>
+            <h5>待上传文件：</h5>
+            <ul>
+              ${to_upload.map((file) => `<li>${file.filename}</li>`).join("")}
+            </ul>
+          </div>
+        `;
       }
 
-      statusDiv.innerHTML = statusHtml;
+      if (to_download.length > 0) {
+        syncStatusHtml += `
+          <div>
+            <h5>待下载文件：</h5>
+            <ul>
+              ${to_download.map((file) => `<li>${file.filename}</li>`).join("")}
+            </ul>
+          </div>
+        `;
+      }
+
+      if (!to_upload.length && !to_download.length) {
+        syncStatusHtml += "<p>图床同步状态正常，无需上传或下载文件。</p>";
+      }
+
+      statusDiv.innerHTML = statusHtml + syncStatusHtml;
     } catch (error) {
       console.error("检查同步状态失败:", error);
       statusDiv.innerHTML = `
         <p style="color: red;">检查同步状态失败: ${error.message}</p>
-        <p>请点击"检查同步状态"按钮手动检查</p>
+        <button onclick="checkSyncStatus()" class="retry-btn">重试</button>
       `;
     }
   }
 
+  // 在同步完成后调用 checkSyncStatus
   async function syncToRemote() {
     try {
-      const btn = document.getElementById("upload-sync-btn");
-      btn.disabled = true;
-      btn.textContent = "同步中...";
-
-      const response = await fetch("/api/sync/upload", { method: "POST" });
-      if (!response.ok) throw new Error("同步到云端失败");
-
-      // 开始轮询检查进度
-      while (true) {
-        const statusResponse = await fetch("/api/sync/check_process");
-        if (!statusResponse.ok) throw new Error("检查同步状态失败");
-        const status = await statusResponse.json();
-
-        if (status.completed) {
-          if (status.success) {
-            alert("同步到云端完成！");
-            await checkSyncStatus(); // 刷新同步状态
-          } else {
-            throw new Error("同步失败");
-          }
-          break;
-        }
-
-        // 等待1秒后再次检查
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch("/api/sync/upload", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(`同步到云端失败: ${data.message}`);
+        return;
       }
+      alert("正在同步到云端...");
+      checkSyncStatus(); // 检查同步状态
     } catch (error) {
       console.error("同步到云端失败:", error);
       alert("同步到云端失败: " + error.message);
-    } finally {
-      const btn = document.getElementById("upload-sync-btn");
-      btn.disabled = false;
-      btn.textContent = "同步到云端";
     }
   }
 
   async function syncFromRemote() {
     try {
-      const btn = document.getElementById("download-sync-btn");
-      btn.disabled = true;
-      btn.textContent = "同步中...";
-
-      const response = await fetch("/api/sync/download", { method: "POST" });
-      if (!response.ok) throw new Error("从云端同步失败");
-
-      // 开始轮询检查进度
-      while (true) {
-        const statusResponse = await fetch("/api/sync/check_process");
-        if (!statusResponse.ok) throw new Error("检查同步状态失败");
-        const status = await statusResponse.json();
-
-        if (status.completed) {
-          if (status.success) {
-            alert("从云端同步完成！");
-            await checkSyncStatus(); // 刷新同步状态
-            await fetchEmojis(); // 刷新表情包列表
-          } else {
-            throw new Error("同步失败");
-          }
-          break;
-        }
-
-        // 等待1秒后再次检查
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch("/api/sync/download", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(`从云端同步失败: ${data.message}`);
+        return;
       }
+      alert("正在从云端同步...");
+      checkSyncStatus(); // 检查同步状态
     } catch (error) {
       console.error("从云端同步失败:", error);
       alert("从云端同步失败: " + error.message);
-    } finally {
-      const btn = document.getElementById("download-sync-btn");
-      btn.disabled = false;
-      btn.textContent = "从云端同步";
     }
   }
 
-  // 添加同步按钮的事件监听器
-  document
-    .getElementById("check-sync-btn")
-    ?.addEventListener("click", checkSyncStatus);
+  // 添加事件监听器
   document
     .getElementById("upload-sync-btn")
-    ?.addEventListener("click", syncToRemote);
+    .addEventListener("click", syncToRemote);
   document
     .getElementById("download-sync-btn")
-    ?.addEventListener("click", syncFromRemote);
-
-  // 初始检查一次同步状态
-  checkSyncStatus();
+    .addEventListener("click", syncFromRemote);
 
   // 添加同步配置的函数
   async function syncConfig() {
